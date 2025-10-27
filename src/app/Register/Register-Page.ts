@@ -26,7 +26,7 @@ type RegisterResponse = { status: 'ok' | 'error'; token?: string; info?: string 
       <p><a routerLink="/login">Ich habe einen Account</a></p>
     </div>
   `,
-  styleUrls: ['./styles.css'],
+  styleUrls: ['./Register.css'],
 })
 export class Register {
   userId = '';
