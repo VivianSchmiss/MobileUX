@@ -1,0 +1,84 @@
+.chat-feed {
+  max-width: 480px;
+  margin: 2rem auto;
+  padding: 1rem;
+  font-family: system-ui, sans-serif;
+}
+
+/* Header oben */
+.chat-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  position: relative;
+  margin-bottom: 1rem;
+}
+.chat-header h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+/* Menü */
+.menu-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.menu-trigger {
+  background: transparent;
+  border: none;
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+}
+
+.menu-dropdown {
+  position: absolute;
+  right: 0;
+  top: 1.8rem;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  border-radius: 0.5rem;
+  min-width: 180px;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Nachrichtenliste */
+.messages-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  border-top: 1px solid #e5e7eb;
+}
+.messages-list li {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 0.95rem;
+}
+.row1 {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: #6b7280;
+  margin-bottom: 0.25rem;
+}
+.nick {
+  font-weight: 600;
+  color: #111;
+}
+.text {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  font-size: 0.95rem;
+  color: #111;
+}
+
+.error {
+  margin-top: 1rem;
+  color: #b91c1c;
+  font-size: 0.9rem;
+}

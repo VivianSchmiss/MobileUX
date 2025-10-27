@@ -16,10 +16,10 @@ type LoginResponse = { status: 'ok' | 'error'; token?: string; message?: string 
       <input [(ngModel)]="username" placeholder="Benutzername" />
       <input [(ngModel)]="password" type="password" placeholder="Passwort" />
 
-      <label style="display:flex;gap:.5rem;align-items:center;margin:.5rem 0;">
+      <div class="remember-me">
         <input type="checkbox" [(ngModel)]="rememberMe" />
         <span>Angemeldet bleiben</span>
-      </label>
+      </div>
 
       <button (click)="login()">Anmelden</button>
 
@@ -28,18 +28,7 @@ type LoginResponse = { status: 'ok' | 'error'; token?: string; message?: string 
 
     <router-outlet></router-outlet>
   `,
-  styles: [
-    `
-      .linklike {
-        background: none;
-        border: none;
-        padding: 0;
-        color: #2563eb;
-        cursor: pointer;
-        text-decoration: underline;
-      }
-    `,
-  ],
+  styleUrls: ['./Login.css'],
 })
 export class Login {
   username = '';
@@ -63,21 +52,24 @@ export class Login {
       `?request=login` +
       `&userid=${this.enc(this.username)}` +
       `&password=${this.enc(this.password)}` +
-      `&_=${Date.now()}`; // Cache-Buster wie im Screenshot
+      `&_=${Date.now()}`; // Cache-Buster
 
     const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
 
     this.http.get<LoginResponse>(url, { headers }).subscribe({
       next: (data) => {
         if (data?.status === 'ok') {
-          // Token & userid ins sessionStorage wie im Screenshot
+          // ✅ Token & userid speichern
           if (data.token) sessionStorage.setItem('authToken', data.token);
           sessionStorage.setItem('userid', this.username);
 
-          // (Optional) rememberMe anders behandeln, falls du localStorage willst:
-          // if (this.rememberMe && data.token) localStorage.setItem('authToken', data.token);
+          // Optional: "Angemeldet bleiben" = localStorage statt sessionStorage
+          if (this.rememberMe && data.token) {
+            localStorage.setItem('auth_token', data.token);
+          }
 
-          //this.router.navigate(['/ChatListPage']); // Zielroute wie im Screenshot
+          // ✅ Nach erfolgreichem Login direkt zur ChatFeed-Seite navigieren
+          this.router.navigate(['/chat-feed']);
         } else {
           alert('Login fehlgeschlagen: ' + (data?.message ?? 'Unbekannter Fehler'));
         }
@@ -90,6 +82,6 @@ export class Login {
   }
 
   register() {
-    this.router.navigate(['/register.page']);
+    this.router.navigate(['/register']);
   }
 }
