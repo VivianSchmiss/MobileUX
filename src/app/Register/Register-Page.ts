@@ -42,14 +42,13 @@ export class Register {
   }
 
   register() {
-    // 1) Felder prüfen
+    // Felder prüfen
     if (!this.userId || !this.password || !this.nickname || !this.fullname) {
       this.errorMessage = 'Bitte fülle alle Felder aus.';
       return;
     }
     this.errorMessage = '';
 
-    // 2) URL wie im Screenshot (GET mit Query-Params + Cache-Buster)
     const apiUrl =
       `https://www2.hs-esslingen.de/~nitzsche/api/` +
       `?request=register` +
@@ -59,7 +58,7 @@ export class Register {
       `&fullname=${this.enc(this.fullname)}` +
       `&_=${Date.now()}`;
 
-    // 3) Request ausführen
+    // Request ausführen
     this.http.get<RegisterResponse>(apiUrl).subscribe({
       next: (data) => {
         if (data?.status === 'ok') {
@@ -67,7 +66,7 @@ export class Register {
             sessionStorage.setItem('authToken', data.token);
           }
           alert('Registrierung erfolgreich! Du wirst weitergeleitet.');
-          this.router.navigate(['/chat-feed']); // oder '/ChatlistPage' falls so gewünscht
+          this.router.navigate(['/chat-feed']);
         } else {
           this.errorMessage = data?.info || 'Registrierung fehlgeschlagen.';
         }
