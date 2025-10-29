@@ -71,6 +71,7 @@ export class Chat implements OnInit {
     const content = this.newMessage.trim();
     if (!content) return;
 
+    // Nachricht bevor Server-Antwort da
     const tempId = Math.random().toString();
     const tempMessage: Message = {
       id: tempId,
@@ -83,6 +84,7 @@ export class Chat implements OnInit {
     this.messages.push(tempMessage);
     this.newMessage = '';
 
+    // post-request zur api
     this.chatService.sendMessage(this.chatId, content).subscribe({
       next: (msg) => {
         const index = this.messages.findIndex((m) => m.id === tempId);

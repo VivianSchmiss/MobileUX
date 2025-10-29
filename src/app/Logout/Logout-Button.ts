@@ -14,9 +14,11 @@ export class LogoutButton {
   private logoutUrl =
     'https://www2.hs-esslingen.de/~nitzsche/map/chat/api/?request=logout&token=${token}';
 
+  // wichtig fpr den Logout-Request
   constructor(private http: HttpClient, private router: Router) {}
 
   logout() {
+    // versucht AUth-Token zu holen (erst aus localStorage, wenn nicht vorhanden dann aus sessionStorage)
     const token = localStorage.getItem('auth_token') || sessionStorage.getItem('authToken');
     if (!token) {
       this.clearAndRedirect();
@@ -25,6 +27,7 @@ export class LogoutButton {
 
     const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
 
+    // Bneutzer wi
     this.http.post(this.logoutUrl, {}, { headers }).subscribe({
       next: (res: any) => {
         console.log('Logout:', res);

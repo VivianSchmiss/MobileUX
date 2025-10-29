@@ -4,8 +4,10 @@ import { RouterLink, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 
+// Beschreibt was der Server zurückschickt
 type RegisterResponse = { status: 'ok' | 'error'; token?: string; info?: string };
 
+// Konfigurationsbeschreibung der Komponente
 @Component({
   selector: 'app-register',
   standalone: true,
@@ -29,7 +31,8 @@ type RegisterResponse = { status: 'ok' | 'error'; token?: string; info?: string 
   styleUrls: ['./Register.css'],
 })
 export class Register {
-  userId = '';
+  // Logik der Komponente
+  userId = ''; // leerer String, damit Angular keine undefined bindet
   nickname = '';
   fullname = '';
   password = '';
@@ -37,6 +40,7 @@ export class Register {
 
   constructor(private http: HttpClient, private router: Router) {}
 
+  // Wegen dem Query-Parameter &userid muss die URL encodiert werden, damit es nicht kaputt geht wegen den Sonderzeichen
   private enc(v: string) {
     return encodeURIComponent((v ?? '').trim());
   }
@@ -58,9 +62,10 @@ export class Register {
       `&fullname=${this.enc(this.fullname)}` +
       `&_=${Date.now()}`;
 
-    // Request ausführen
+    // Request ausführen und abschicken
     this.http.get<RegisterResponse>(apiUrl).subscribe({
       next: (data) => {
+        // prügt den Status
         if (data?.status === 'ok') {
           if (data.token) {
             sessionStorage.setItem('authToken', data.token);

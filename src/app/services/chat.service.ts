@@ -28,14 +28,15 @@ export class ChatService {
   constructor(private http: HttpClient, private auth: AuthService) {}
 
   getChats(): Observable<Chat[]> {
-    const token = this.auth.token ?? '';
+    const token = this.auth.token ?? ''; // wenn null/undefined dann ''
 
     const url = `${this.baseUrl}?request=getchats&token=${encodeURIComponent(
       token
-    )}&_=${Date.now()}`;
+    )}&_=${Date.now()}`; // no caching
 
     console.log(token);
 
+    // http request
     return this.http.get<any>(url).pipe(
       map((res) => {
         if (Array.isArray(res)) return res as Chat[];
@@ -60,13 +61,14 @@ export class ChatService {
     return this.http.get<any>(url).pipe(
       map((res) => {
         const rawList = Array.isArray(res)
-          ? res
+          ? res // array
           : res.messages
           ? res.messages
           : res.result
           ? res.result
           : [];
 
+        // jedes item von array in Message-Objekt umwandeln
         return rawList.map(
           (item: any): Message => ({
             id: String(item.id),
@@ -87,6 +89,7 @@ export class ChatService {
 
     const body = { request: 'postmessage', token: token, text: content, chatid: chatId };
 
+    // http post request
     return this.http.post<any>(url, body).pipe(
       map((res: any) => {
         return {
@@ -98,5 +101,100 @@ export class ChatService {
         } as Message;
       })
     );
+  }
+
+  createChat(chatName: string) {
+    const token = this.auth.token ?? '';
+
+    const url =
+      `https://www2.hs-esslingen.de/~nitzsche/api/` +
+      `?request=createchat` +
+      `&token=${encodeURIComponent(token)}` +
+      `&fromid=${encodeURIComponent(chatName)}` +
+      `&_=${Date.now()}`;
+
+    return this.http.get<any>(url).pipe(
+      map((res) => {
+        const rawList = Array.isArray(res)
+          ? res
+          : res.chats
+          ? res.chats
+          : res.result
+          ? res.result
+          : [];
+
+        // jedes item von array in Chat-Objekt umwandeln
+        return rawList.map(
+          (item: any): Chat => ({
+            id: String(item.id ?? item.chatid ?? ''),
+            name: item.name ?? item.chatname ?? 'Unbennant',
+            lastMessage: item.lastMessage ?? item.lastmsg ?? item.text ?? '', // 1. was nicht null/undefined nehmen
+            updatedAt: item.updatedAt ?? item.time ?? item.timestamp ?? '',
+          })
+        );
+      })
+    );
+  }
+
+  leaveChat(chatId: string) {
+    const token = this.auth.token ?? '';
+
+    const url =
+      `https://www2.hs-esslingen.de/~nitzsche/api/` +
+      `?request=leavechat` +
+      `&token=${encodeURIComponent(token)}` +
+      `&fromid=${encodeURIComponent(chatId)}` +
+      `&_=${Date.now()}`;
+
+    return this.http.get<any>(url).pipe(
+      map((res) => {
+        const rawList = Array.isArray(res)
+          ? res
+          : res.chats
+          ? res.chats
+          : res.result
+          ? res.result
+          : [];
+
+        return rawList.map(
+          (item: any): Chat => ({
+            id: String(item.id ?? item.chatid ?? ''),
+            name: item.name ?? item.chatname ?? 'Unbennant',
+            lastMessage: item.lastMessage ?? item.lastmsg ?? item.text ?? '',
+            updatedAt: item.updatedAt ?? item.time ?? item.timestamp ?? '',
+          })
+        );
+      })
+    );
+  }
+
+  inviteUserToChat(chatId: string, invitedHash: string) {
+    const token = this.auth.token ?? '';
+
+    const url =
+      `https://www2.hs-esslingen.de/~nitzsche/api/` +
+      `?request=invite` +
+      `&token=${encodeURIComponent(token)}` +
+      `&fromid=${encodeURIComponent(chatId)}` +
+      `&invitedhash=${encodeURIComponent(invitedHash)}` +
+      `&_=${Date.now()}`;
+
+    return this.http.get<any>(url).pipe(
+      map((res) => {
+        return res;
+      })
+    );
+  }
+
+  getInvites() {
+    const token = this.auth.token ?? '';
+
+    const url =
+      `https://www2.hs-esslingen.de/~nitzsche/api/` +
+      `?request=getinvites` +
+      `&token=${encodeURIComponent(token)}` +
+      `&_=${Date.now()}`;
+
+    return this.http.get<any>(url).pipe(map((res) => res));
   }
 }
