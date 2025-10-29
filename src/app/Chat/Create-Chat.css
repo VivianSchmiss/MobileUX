@@ -1,0 +1,30 @@
+.create-chat-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 2rem;
+}
+
+.chat-input {
+  padding: 0.5rem;
+  width: 80%;
+  max-width: 300px;
+}
+
+button {
+  padding: 0.5rem 1.5rem;
+  border: none;
+  border-radius: 6px;
+  background: #0078ff;
+  color: white;
+  cursor: pointer;
+}
+
+button:disabled {
+  background: gray;
+}
+
+.back-link {
+  margin-top: 1rem;
+}

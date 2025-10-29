@@ -5,10 +5,11 @@ import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../services/auth.service';
 
+// was der Server zurückschickt
 type LoginResponse = { status: 'ok' | 'error'; token?: string; message?: string };
 
 @Component({
-  selector: 'app-login',
+  selector: 'app-login', // kann man woanders einbinden als Komponente
   standalone: true,
   imports: [CommonModule, FormsModule, RouterLink, RouterOutlet],
   template: `
@@ -36,6 +37,7 @@ export class Login {
   password = '';
   rememberMe = true;
 
+  // wichtig fpr den Login-Request
   constructor(private http: HttpClient, private router: Router, private authService: AuthService) {}
 
   private enc(v: string) {
@@ -60,8 +62,11 @@ export class Login {
     this.http.get<LoginResponse>(url).subscribe({
       next: (data) => {
         if (data?.status === 'ok' && data.token) {
+          // true = Token in localStorage (persistent über Browser-Neustart)
+          // false = Token nur in sessionStorage (lebt bis der tab geschlossen ist)
+          // trennt "dauerhaft eingeloggt bleiben" und "nur für diese Sitzung"
           this.authService.setToken(data.token, this.rememberMe);
-          sessionStorage.setItem('userid', this.username);
+          sessionStorage.setItem('userid', this.username); // username wird zusätzlch im sessionStorage gespeichert, damit man später sieht wer eingeloggt ist
           this.router.navigate(['/chat-feed']);
         } else {
           alert('Login fehlgeschlagen: ' + (data?.message ?? 'Unbekannter Fehler'));

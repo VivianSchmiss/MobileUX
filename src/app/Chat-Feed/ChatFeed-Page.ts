@@ -15,6 +15,7 @@ import { DeregisterButton } from '../Deregister/Deregister-Button';
       <header class="chat-header">
         <h2>Chat Feed</h2>
         <div class="menu-wrapper">
+          <button routerLink="/create-chat">+ Neuer Chat</button>
           <button class="menu-button" (click)="menuOpen = !menuOpen">⋮</button>
           <div class="menu-dropdown" *ngIf="menuOpen">
             <!-- Hier die beiden Komponenten -->
