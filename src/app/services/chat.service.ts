@@ -15,7 +15,8 @@ export interface Message {
   id: string;
   chatId: string;
   sender: string;
-  content: string;
+  content?: string | null;
+  imageUrl?: string | null;
   createdAt: string;
 }
 
@@ -61,20 +62,20 @@ export class ChatService {
     return this.http.get<any>(url).pipe(
       map((res) => {
         const rawList = Array.isArray(res)
-          ? res // array
+          ? res
           : res.messages
           ? res.messages
           : res.result
           ? res.result
           : [];
 
-        // jedes item von array in Message-Objekt umwandeln
         return rawList.map(
           (item: any): Message => ({
             id: String(item.id),
             chatId: String(item.chatid ?? chatId),
             sender: item.usernick || item.userid || 'unknown',
             content: item.text ?? '',
+            imageUrl: item.imageUrl ?? item.imageurl ?? item.image ?? null,
             createdAt: item.time ?? '',
           })
         );
@@ -98,6 +99,30 @@ export class ChatService {
           sender: sessionStorage.getItem('userid') ?? 'Ich',
           content,
           createdAt: new Date().toISOString(),
+        } as Message;
+      })
+    );
+  }
+
+  sendImage(chatId: string, file: File): Observable<Message> {
+    const token = this.auth.token ?? '';
+    const url = this.baseUrl;
+
+    const formData = new FormData();
+    formData.append('request', 'postimage'); // <-- NAME MUSST DU MIT BACKEND ABSPRECHEN
+    formData.append('token', token);
+    formData.append('chatid', chatId);
+    formData.append('file', file);
+
+    return this.http.post<any>(url, formData).pipe(
+      map((res: any) => {
+        return {
+          id: String(res['message-id'] ?? res.id ?? Math.random()),
+          chatId: String(chatId),
+          sender: sessionStorage.getItem('userid') ?? 'Ich',
+          content: res.text ?? '', // falls Backend optional Text mitschickt
+          imageUrl: res.imageUrl ?? res.imageurl ?? res.image ?? null,
+          createdAt: res.time ?? new Date().toISOString(),
         } as Message;
       })
     );
