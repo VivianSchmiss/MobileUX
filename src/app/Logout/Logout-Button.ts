@@ -14,7 +14,6 @@ export class LogoutButton {
   private logoutUrl =
     'https://www2.hs-esslingen.de/~nitzsche/map/chat/api/?request=logout&token=${token}';
 
-  // wichtig fpr den Logout-Request
   constructor(private http: HttpClient, private router: Router) {}
 
   logout() {

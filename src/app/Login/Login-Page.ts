@@ -9,7 +9,7 @@ import { AuthService } from '../services/auth.service';
 type LoginResponse = { status: 'ok' | 'error'; token?: string; message?: string };
 
 @Component({
-  selector: 'app-login', // kann man woanders einbinden als Komponente
+  selector: 'app-login',
   standalone: true,
   imports: [CommonModule, FormsModule, RouterLink, RouterOutlet],
   template: `
@@ -37,7 +37,6 @@ export class Login {
   password = '';
   rememberMe = true;
 
-  // wichtig fpr den Login-Request
   constructor(private http: HttpClient, private router: Router, private authService: AuthService) {}
 
   private enc(v: string) {

@@ -1,15 +1,17 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
-import { ChatService, Chat } from '../services/chat.service';
+import { ChatService, Chat, Message } from '../services/chat.service';
 import { Router, RouterLink } from '@angular/router';
 import { LogoutButton } from '../Logout/Logout-Button';
 import { DeregisterButton } from '../Deregister/Deregister-Button';
+import { ActivatedRoute } from '@angular/router';
+import { Invites } from '../Chat/Invites';
 
 @Component({
   selector: 'app-chat-feed',
   standalone: true,
-  imports: [CommonModule, RouterLink, LogoutButton, DeregisterButton],
+  imports: [CommonModule, RouterLink, Invites, LogoutButton, DeregisterButton],
   template: `
     <div class="chat-feed">
       <header class="chat-header">
@@ -18,7 +20,7 @@ import { DeregisterButton } from '../Deregister/Deregister-Button';
           <button routerLink="/create-chat">+ Neuer Chat</button>
           <button class="menu-button" (click)="menuOpen = !menuOpen">⋮</button>
           <div class="menu-dropdown" *ngIf="menuOpen">
-            <!-- Hier die beiden Komponenten -->
+            <button [routerLink]="['/invites']">Einladungen</button>
             <app-logout-button></app-logout-button>
             <app-deregister-button></app-deregister-button>
           </div>
@@ -27,10 +29,8 @@ import { DeregisterButton } from '../Deregister/Deregister-Button';
 
       <div *ngIf="loading">Loading chats...</div>
 
-      <div *ngFor="let chat of chats" class="chat-item" (click)="openChat(chat.id)">
+      <div *ngFor="let chat of chats" class="chat-item" (click)="openChat(chat)">
         <div class="chat-name">{{ chat.name }}</div>
-        <div class="chat-preview">{{ chat.lastMessage }}</div>
-        <div class="chat-time">{{ chat.updatedAt | date : 'short' }}</div>
       </div>
     </div>
   `,
@@ -45,36 +45,19 @@ export class ChatFeed implements OnInit {
 
   ngOnInit() {
     this.chatService.getChats().subscribe({
-      next: (data) => {
-        console.log('Loaded chats:', data);
-        this.chats = [
-          {
-            id: '0',
-            name: 'Chat 0',
-            lastMessage: 'Willkommen im Standardchat!',
-            updatedAt: new Date().toISOString(),
-          },
-          ...data,
-        ];
+      next: (chats) => {
         this.loading = false;
+        this.chats = chats ?? [];
+        console.log('Chats in Feed:', this.chats);
       },
-      error: (err) => {
-        console.error('Error loading chats', err);
-        // Zeige Chat 0 auch, wenn API fehlschlägt
-        this.chats = [
-          {
-            id: '0',
-            name: 'Chat 0',
-            lastMessage: 'Test',
-            updatedAt: new Date().toISOString(),
-          },
-        ];
+      error: () => {
         this.loading = false;
+        this.chats = [];
       },
     });
   }
 
-  openChat(chatId: string) {
-    this.router.navigate(['/chat', chatId]);
+  openChat(chat: Chat) {
+    this.router.navigate(['/chat', chat.id], { queryParams: { name: chat.name } });
   }
 }

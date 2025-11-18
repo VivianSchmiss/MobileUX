@@ -3,12 +3,14 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { ActivatedRoute } from '@angular/router';
-import { ChatService, Message } from '../services/chat.service';
+import { ChatService, Message, Profile } from '../services/chat.service';
 
 @Component({
   selector: 'app-chat',
   standalone: true,
   imports: [CommonModule, RouterLink],
+  templateUrl: './Chat.html',
+  styleUrls: ['./Chat.css'],
   template: `
     <div class="chat-detail" *ngIf="!loading; else loadingTpl">
       <div #messagesContainer class="messages-container">
@@ -93,30 +95,26 @@ export class Chat implements OnInit, AfterViewInit {
 
   messages: Message[] = [];
   chatId!: string;
+  chatName = '';
   loading = true;
   newMessage = '';
   currentUser = sessionStorage.getItem('userid') || 'Ich';
-  private viewInitialized = false;
 
-  // Kamera / Foto
-  @ViewChild('video') videoRef!: ElementRef<HTMLVideoElement>;
-  @ViewChild('canvas') canvasRef!: ElementRef<HTMLCanvasElement>;
-
-  showPhotoContainer = false;
-  streamActive = false;
-  private cameraStream: MediaStream | null = null;
-
-  photoBlob: Blob | null = null;
-  previewUrl: string | null = null; // Vorschau des aufgenommenen / ausgewählten Fotos
-
-  locationLoading = false;
-
-  showAttachmentMenu = false;
-
-  constructor(private route: ActivatedRoute, private chatService: ChatService) {}
+  constructor(
+    private route: ActivatedRoute,
+    private chatService: ChatService,
+    private router: Router
+  ) {}
 
   ngOnInit() {
-    this.chatId = this.route.snapshot.paramMap.get('id')!;
+    this.chatId = this.route.snapshot.paramMap.get('id') ?? '';
+
+    this.chatService.getChats().subscribe({
+      next: (chats) => {
+        const found = chats.find((c) => c.id === this.chatId);
+        this.chatName = found?.name ?? '';
+      },
+    });
   }
 
   ngAfterViewInit() {
@@ -130,7 +128,7 @@ export class Chat implements OnInit, AfterViewInit {
 
   loadMessages() {
     this.loading = true;
-    this.chatService.getMessages(this.chatId).subscribe({
+    this.chatService.getMessages(this.chatId, 0).subscribe({
       next: (msgs) => {
         this.messages = msgs;
         this.loading = false;
@@ -368,5 +366,23 @@ export class Chat implements OnInit, AfterViewInit {
         maximumAge: 0,
       }
     );
+  }
+
+  leaveChat() {
+    if (!this.chatId) {
+      return;
+    }
+
+    this.loading = true;
+
+    this.chatService.leaveChat(this.chatId).subscribe({
+      next: () => {
+        this.router.navigate(['/chat-feed']);
+      },
+      error: (err) => {
+        console.error('Error leaving chat', err);
+        this.loading = false;
+      },
+    });
   }
 }

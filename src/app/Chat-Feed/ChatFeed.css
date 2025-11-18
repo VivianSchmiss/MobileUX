@@ -5,7 +5,6 @@
   font-family: system-ui, sans-serif;
 }
 
-/* Header oben */
 .chat-header {
   display: flex;
   justify-content: space-between;
@@ -47,7 +46,6 @@
   flex-direction: column;
 }
 
-/* Nachrichtenliste */
 .messages-list {
   list-style: none;
   padding: 0;
@@ -84,6 +82,7 @@
 }
 
 .chat-item {
+  height: 50px;
   border-bottom: 1px solid #ccc;
   padding: 10px;
   cursor: pointer;
