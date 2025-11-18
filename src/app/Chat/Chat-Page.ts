@@ -3,58 +3,45 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { ActivatedRoute } from '@angular/router';
-import { ChatService, Message } from '../services/chat.service';
+import { ChatService, Message, Profile } from '../services/chat.service';
 
 @Component({
   selector: 'app-chat',
   standalone: true,
   imports: [CommonModule, RouterLink],
-  template: `
-    <div class="chat-detail" *ngIf="!loading; else loadingTpl">
-      <div *ngFor="let msg of messages" class="message" [class.mine]="msg.sender === currentUser">
-        <div class="message-header">
-          <span class="sender">{{ msg.sender }}</span>
-          <span class="time">{{ msg.createdAt }}</span>
-        </div>
-        <div class="content">{{ msg.content }}</div>
-      </div>
-
-      <!-- Eingabe für neue Nachricht -->
-      <div class="message-input">
-        <input
-          type="text"
-          [value]="newMessage"
-          (input)="newMessage = $any($event.target).value"
-          placeholder="Nachricht schreiben..."
-          (keyup.enter)="sendMessage()"
-        />
-        <button (click)="sendMessage()">Senden</button>
-      </div>
-    </div>
-
-    <ng-template #loadingTpl>
-      <div>Loading messages...</div>
-    </ng-template>
-  `,
+  templateUrl: './Chat.html',
   styleUrls: ['./Chat.css'],
 })
 export class Chat implements OnInit {
   messages: Message[] = [];
   chatId!: string;
+  chatName = '';
   loading = true;
   newMessage = '';
   currentUser = sessionStorage.getItem('userid') || 'Ich';
 
-  constructor(private route: ActivatedRoute, private chatService: ChatService) {}
+  constructor(
+    private route: ActivatedRoute,
+    private chatService: ChatService,
+    private router: Router
+  ) {}
 
   ngOnInit() {
-    this.chatId = this.route.snapshot.paramMap.get('id')!;
+    this.chatId = this.route.snapshot.paramMap.get('id') ?? '';
+
+    this.chatService.getChats().subscribe({
+      next: (chats) => {
+        const found = chats.find((c) => c.id === this.chatId);
+        this.chatName = found?.name ?? '';
+      },
+    });
+
     this.loadMessages();
   }
 
   loadMessages() {
     this.loading = true;
-    this.chatService.getMessages(this.chatId).subscribe({
+    this.chatService.getMessages(this.chatId, 0).subscribe({
       next: (msgs) => {
         console.log('Loaded messages', this.chatId, msgs);
         this.messages = msgs;
@@ -94,6 +81,24 @@ export class Chat implements OnInit {
       },
       error: (err) => {
         console.error('Error sending message', err);
+      },
+    });
+  }
+
+  leaveChat() {
+    if (!this.chatId) {
+      return;
+    }
+
+    this.loading = true;
+
+    this.chatService.leaveChat(this.chatId).subscribe({
+      next: () => {
+        this.router.navigate(['/chat-feed']);
+      },
+      error: (err) => {
+        console.error('Error leaving chat', err);
+        this.loading = false;
       },
     });
   }

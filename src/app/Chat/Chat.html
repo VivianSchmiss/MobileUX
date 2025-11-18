@@ -1,0 +1,33 @@
+<div class="chat-detail">
+  <div *ngIf="!loading; else loadingTpl"></div>
+
+  <header class="chat-header">
+    <h2 class="chat-title">
+      {{ chatName || 'Chat' }}
+    </h2>
+    <button class="leave-btn" (click)="leaveChat()">Chat verlassen</button>
+  </header>
+
+  <div *ngFor="let msg of messages" class="message" [class.mine]="msg.sender === currentUser">
+    <div class="message-header">
+      <span class="sender">{{ msg.sender }}</span>
+      <span class="time">{{ msg.createdAt }}</span>
+    </div>
+    <div class="content">{{ msg.content }}</div>
+  </div>
+
+  <div class="message-input">
+    <input
+      type="text"
+      [value]="newMessage"
+      (input)="newMessage = $any($event.target).value"
+      placeholder="Nachricht schreiben..."
+      (keyup.enter)="sendMessage()"
+    />
+    <button (click)="sendMessage()">Senden</button>
+  </div>
+
+  <ng-template #loadingTpl>
+    <div>Loading messages...</div>
+  </ng-template>
+</div>
