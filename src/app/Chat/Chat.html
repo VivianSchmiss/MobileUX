@@ -14,17 +14,35 @@
       <span class="time">{{ msg.createdAt }}</span>
     </div>
     <div class="content">{{ msg.content }}</div>
+    <img *ngIf="msg.imageUrl" [src]="msg.imageUrl" alt="Bild" class="image-message" />
   </div>
 
   <div class="message-input">
+    <div *ngIf="showPhotoContainer" class="photo-container">
+      <!-- Video IMMER im DOM, nur verstecken -->
+      <video #video autoplay playsinline class="camera-preview" [hidden]="!streamActive"></video>
+
+      <canvas #canvas hidden></canvas>
+
+      <img *ngIf="previewUrl" [src]="previewUrl" alt="Foto Vorschau" class="photo-preview" />
+    </div>
+
+    <div class="camera-buttons">
+      <button *ngIf="!streamActive && !previewUrl" type="button" (click)="openCamera()">📷</button>
+      <button *ngIf="streamActive" type="button" (click)="takePhoto()">📸 Foto machen</button>
+      <button *ngIf="streamActive" type="button" (click)="stopCamera()">✖ Kamera stoppen</button>
+      <button *ngIf="previewUrl" type="button" (click)="removePhoto()">🗑 Foto entfernen</button>
+    </div>
+
+    <button type="button" (click)="shareCurrentLocation()" [disabled]="locationLoading">📍</button>
     <input
       type="text"
-      [value]="newMessage"
-      (input)="newMessage = $any($event.target).value"
+      [(ngModel)]="newMessage"
       placeholder="Nachricht schreiben..."
       (keyup.enter)="sendMessage()"
     />
-    <button (click)="sendMessage()">Senden</button>
+
+    <button (click)="sendMessage()">➤</button>
   </div>
 
   <ng-template #loadingTpl>

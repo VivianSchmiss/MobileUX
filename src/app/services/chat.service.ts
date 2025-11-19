@@ -155,6 +155,32 @@ export class ChatService {
     );
   }
 
+  sendImage(chatId: string, file: File, content?: string): Observable<Message> {
+    const formData = new FormData();
+    formData.append('request', 'postmessage');
+    formData.append('token', this.getToken());
+    formData.append('chatid', chatId);
+
+    if (content && content.trim().length > 0) {
+      formData.append('text', content.trim());
+    }
+
+    formData.append('photo', file);
+
+    return this.http.post<any>(this.baseUrl, formData).pipe(
+      map(
+        (res: any): Message => ({
+          id: String(res['message-id'] ?? res.id ?? Math.random()),
+          chatId: String(chatId),
+          sender: sessionStorage.getItem('userid') ?? 'Ich',
+          content: res.text ?? content ?? '',
+          imageUrl: res.imageUrl ?? res.imageurl ?? res.image ?? null,
+          createdAt: res.time ?? new Date().toISOString(),
+        })
+      )
+    );
+  }
+
   getProfiles(): Observable<Profile[]> {
     return this.getApi<any>('getprofiles').pipe(
       map((res) => {
@@ -193,30 +219,6 @@ export class ChatService {
           lastMessage: item.lastmessage ?? null,
           updatedAt: item.updated_at ?? null,
         } as Chat;
-      })
-    );
-  }
-
-  sendImage(chatId: string, file: File): Observable<Message> {
-    const token = this.auth.token ?? '';
-    const url = this.baseUrl;
-
-    const formData = new FormData();
-    formData.append('request', 'postimage'); // <-- NAME MUSST DU MIT BACKEND ABSPRECHEN
-    formData.append('token', token);
-    formData.append('chatid', chatId);
-    formData.append('file', file);
-
-    return this.http.post<any>(url, formData).pipe(
-      map((res: any) => {
-        return {
-          id: String(res['message-id'] ?? res.id ?? Math.random()),
-          chatId: String(chatId),
-          sender: sessionStorage.getItem('userid') ?? 'Ich',
-          content: res.text ?? '', // falls Backend optional Text mitschickt
-          imageUrl: res.imageUrl ?? res.imageurl ?? res.image ?? null,
-          createdAt: res.time ?? new Date().toISOString(),
-        } as Message;
       })
     );
   }
