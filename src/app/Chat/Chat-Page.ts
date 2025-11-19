@@ -4,92 +4,16 @@ import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { ActivatedRoute } from '@angular/router';
 import { ChatService, Message, Profile } from '../services/chat.service';
+import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-chat',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, FormsModule],
   templateUrl: './Chat.html',
-  styleUrls: ['./Chat.css'],
-  template: `
-    <div class="chat-detail" *ngIf="!loading; else loadingTpl">
-      <div #messagesContainer class="messages-container">
-        <div *ngFor="let msg of messages" class="message" [class.mine]="msg.sender === currentUser">
-          <div class="message-header">
-            <span class="sender">{{ msg.sender }}</span>
-            <span class="time">{{ msg.createdAt }}</span>
-          </div>
-
-          <div class="content" *ngIf="msg.content">
-            {{ msg.content }}
-          </div>
-
-          <!-- Bildnachricht -->
-          <img *ngIf="msg.imageUrl" [src]="msg.imageUrl" alt="Bild" class="image-message" />
-        </div>
-      </div>
-
-      <div class="message-input">
-        <div *ngIf="showPhotoContainer" class="photo-container">
-          <!-- Video IMMER im DOM, nur verstecken -->
-          <video
-            #video
-            autoplay
-            playsinline
-            class="camera-preview"
-            [hidden]="!streamActive"
-          ></video>
-
-          <canvas #canvas hidden></canvas>
-
-          <img *ngIf="previewUrl" [src]="previewUrl" alt="Foto Vorschau" class="photo-preview" />
-        </div>
-
-        <div class="camera-buttons">
-          <button *ngIf="!streamActive && !previewUrl" type="button" (click)="openCamera()">
-            📷
-          </button>
-          <button *ngIf="streamActive" type="button" (click)="takePhoto()">📸 Foto machen</button>
-          <button *ngIf="streamActive" type="button" (click)="stopCamera()">
-            ✖ Kamera stoppen
-          </button>
-          <button *ngIf="previewUrl" type="button" (click)="removePhoto()">🗑 Foto entfernen</button>
-        </div>
-
-        <button type="button" (click)="shareCurrentLocation()" [disabled]="locationLoading">
-          📍
-        </button>
-
-        <input
-          type="text"
-          [value]="newMessage"
-          (input)="newMessage = $any($event.target).value"
-          placeholder="Nachricht schreiben..."
-          (keyup.enter)="sendMessage()"
-        />
-
-        <input
-          #fileInput
-          type="file"
-          accept="image/*"
-          capture="environment"
-          hidden
-          (change)="onImageSelected($event)"
-        />
-        <button type="button" (click)="fileInput.click()">🔗</button>
-
-        <button (click)="sendMessage()">➤</button>
-      </div>
-    </div>
-
-    <ng-template #loadingTpl>
-      <div>Loading messages...</div>
-    </ng-template>
-  `,
   styleUrls: ['./Chat-Page.css'],
 })
 export class Chat implements OnInit, AfterViewInit {
-  // Chat / Messages
   @ViewChild('messagesContainer')
   messagesContainer!: ElementRef<HTMLDivElement>;
 
@@ -99,6 +23,21 @@ export class Chat implements OnInit, AfterViewInit {
   loading = true;
   newMessage = '';
   currentUser = sessionStorage.getItem('userid') || 'Ich';
+  private viewInitialized = false;
+
+  @ViewChild('video') videoRef!: ElementRef<HTMLVideoElement>;
+  @ViewChild('canvas') canvasRef!: ElementRef<HTMLCanvasElement>;
+
+  showPhotoContainer = false;
+  streamActive = false;
+  private cameraStream: MediaStream | null = null;
+
+  photoFile: File | null = null;
+  previewUrl: string | null = null;
+
+  locationLoading = false;
+
+  showAttachmentMenu = false;
 
   constructor(
     private route: ActivatedRoute,
@@ -141,10 +80,18 @@ export class Chat implements OnInit, AfterViewInit {
       },
     });
   }
-
   sendMessage() {
+    // Text aus dem Eingabefeld (newMessage benutzt du schon überall)
     const content = this.newMessage.trim();
-    if (!content) return;
+
+    // nichts eingegeben & kein Foto -> nichts tun
+    if (!content && !this.photoFile) return;
+
+    // BEDINGUNG: Foto darf nur mit Nachricht gesendet werden
+    if (this.photoFile && !content) {
+      alert('Ein Foto darf nur zusammen mit einer Nachricht gesendet werden.');
+      return;
+    }
 
     const tempId = Math.random().toString();
 
@@ -153,6 +100,7 @@ export class Chat implements OnInit, AfterViewInit {
       chatId: this.chatId,
       sender: this.currentUser,
       content,
+      imageUrl: this.previewUrl ?? null, // wenn Foto vorhanden, lokale Vorschau anzeigen
       createdAt: new Date().toISOString(),
     };
 
@@ -160,11 +108,28 @@ export class Chat implements OnInit, AfterViewInit {
     this.newMessage = '';
     setTimeout(() => this.scrollToBottom());
 
-    this.chatService.sendMessage(this.chatId, content).subscribe({
+    // Entscheiden: Bild + Text oder nur Text
+    const request$ =
+      this.photoFile && content
+        ? this.chatService.sendImage(this.chatId, this.photoFile, content) // Bild + Text
+        : this.chatService.sendMessage(this.chatId, content); // nur Text
+
+    request$.subscribe({
       next: (msg) => {
         const index = this.messages.findIndex((m) => m.id === tempId);
         if (index >= 0) this.messages[index] = msg;
-        this.loadMessages();
+
+        // Aufräumen, wenn Foto dabei war
+        if (this.photoFile) {
+          this.photoFile = null;
+          if (this.previewUrl) {
+            URL.revokeObjectURL(this.previewUrl);
+            this.previewUrl = null;
+          }
+          this.showPhotoContainer = false;
+        }
+
+        this.loadMessages(); // wie in deiner alten Version
       },
       error: (err) => {
         console.error('Error sending message', err);
@@ -179,11 +144,9 @@ export class Chat implements OnInit, AfterViewInit {
     el.scrollTop = el.scrollHeight;
   }
 
-  // Kamera öffnen
   async openCamera() {
     this.showPhotoContainer = true;
 
-    // kurz warten, bis *ngIf den Video-Tag gerendert hat
     await new Promise((resolve) => setTimeout(resolve, 0));
 
     try {
@@ -202,11 +165,9 @@ export class Chat implements OnInit, AfterViewInit {
     }
   }
 
-  // Foto aufnehmen
   takePhoto() {
     const video = this.videoRef?.nativeElement;
     const canvas = this.canvasRef?.nativeElement;
-
     if (!video || !canvas) return;
 
     canvas.width = video.videoWidth || 640;
@@ -221,22 +182,22 @@ export class Chat implements OnInit, AfterViewInit {
       (blob) => {
         if (!blob) return;
 
-        this.photoBlob = blob;
-        // Vorschau-URL erzeugen
+        // Vorschau-URL aktualisieren
         if (this.previewUrl) {
           URL.revokeObjectURL(this.previewUrl);
         }
         this.previewUrl = URL.createObjectURL(blob);
 
-        // Kamera nach dem Foto stoppen
-        this.stopCamera();
+        // Blob als File speichern -> wird später an sendImage übergeben
+        this.photoFile = new File([blob], 'photo.jpg', {
+          type: blob.type || 'image/jpeg',
+        });
       },
       'image/jpeg',
       0.9
     );
   }
 
-  // Kamera stoppen
   stopCamera() {
     const video = this.videoRef?.nativeElement;
     const stream = ((video && (video.srcObject as MediaStream)) || this.cameraStream) ?? null;
@@ -252,64 +213,18 @@ export class Chat implements OnInit, AfterViewInit {
     this.cameraStream = null;
     this.streamActive = false;
 
-    // Container wieder ausblenden, Layout wie vorher
     this.showPhotoContainer = false;
   }
 
-  // Foto entfernen (lokal)
   removePhoto() {
-    this.photoBlob = null;
+    this.photoFile = null;
+
     if (this.previewUrl) {
       URL.revokeObjectURL(this.previewUrl);
     }
     this.previewUrl = null;
 
-    // Container wieder ausblenden, Layout wie vorher
     this.showPhotoContainer = false;
-  }
-
-  onImageSelected(event: Event) {
-    this.showAttachmentMenu = false;
-
-    const input = event.target as HTMLInputElement;
-    if (!input.files || input.files.length === 0) return;
-
-    const file = input.files[0];
-    this.photoBlob = file;
-
-    if (this.previewUrl) {
-      URL.revokeObjectURL(this.previewUrl);
-    }
-    this.previewUrl = URL.createObjectURL(file);
-
-    // temporäre Nachricht im Chat anzeigen (wie bei sendMessage)
-    const tempId = Math.random().toString();
-    const tempMessage: Message = {
-      id: tempId,
-      chatId: this.chatId,
-      sender: this.currentUser,
-      content: '',
-      imageUrl: this.previewUrl, // lokale Vorschau
-      createdAt: new Date().toISOString(),
-    };
-
-    this.messages.push(tempMessage);
-    setTimeout(() => this.scrollToBottom());
-
-    // an Backend schicken
-    this.chatService.sendImage(this.chatId, file).subscribe({
-      next: (msg) => {
-        const index = this.messages.findIndex((m) => m.id === tempId);
-        if (index >= 0) this.messages[index] = msg; // echte Server-Message ersetzen
-      },
-      error: (err) => {
-        console.error('Error sending image', err);
-        //Fehlermeldung anzeigen oder tempMessage wieder entfernen
-      },
-    });
-
-    // Input leeren, sonst feuert (change) beim selben Bild nicht nochmal
-    input.value = '';
   }
 
   shareCurrentLocation() {
@@ -328,10 +243,9 @@ export class Chat implements OnInit, AfterViewInit {
 
         const link = `Mein aktueller Standort: https://maps.google.com/?q=${latitude},${longitude}`;
 
-        // direkt als Chatnachricht senden, ohne dass der User was tippen muss
         this.chatService.sendMessage(this.chatId, link).subscribe({
           next: (msg) => {
-            this.messages.push(msg); // Nachricht lokal anzeigen
+            this.messages.push(msg);
             this.locationLoading = false;
             setTimeout(() => this.scrollToBottom());
           },
