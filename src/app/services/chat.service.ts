@@ -124,16 +124,31 @@ export class ChatService {
       map((res) => {
         const rawList = this.extractList<any>(res, ['messages', 'result']);
 
-        return rawList.map(
-          (item: any): Message => ({
+        return rawList.map((item: any): Message => {
+          // hier holen wir uns die photo-id – Namen raten wir grob
+          const photoId = item.photoid ?? item.photoId ?? item.photo ?? item.image ?? null;
+
+          let imageUrl: string | null = null;
+
+          if (photoId) {
+            // URL, die dein Browser direkt als <img> laden kann
+            const token = this.getToken();
+            imageUrl =
+              `${this.baseUrl}` +
+              `?request=getphoto` +
+              `&token=${encodeURIComponent(token)}` +
+              `&photoid=${encodeURIComponent(photoId)}`;
+          }
+
+          return {
             id: String(item.id),
             chatId: String(item.chatid ?? chatId),
             sender: item.usernick || item.userid || 'unknown',
             content: item.text ?? '',
-            imageUrl: item.imageUrl ?? item.imageurl ?? item.image ?? null,
+            imageUrl,
             createdAt: item.time ?? '',
-          })
-        );
+          };
+        });
       })
     );
   }
@@ -156,28 +171,66 @@ export class ChatService {
   }
 
   sendImage(chatId: string, file: File, content?: string): Observable<Message> {
-    const formData = new FormData();
-    formData.append('request', 'postmessage');
-    formData.append('token', this.getToken());
-    formData.append('chatid', chatId);
+    // 1) File in Base64 umwandeln
+    const fileToBase64$ = new Observable<string>((observer) => {
+      const reader = new FileReader();
 
-    if (content && content.trim().length > 0) {
-      formData.append('text', content.trim());
-    }
+      reader.onload = () => {
+        const result = reader.result as string;
+        const base64 = result.split(',')[1] ?? '';
+        observer.next(base64);
+        observer.complete();
+      };
 
-    formData.append('photo', file);
+      reader.onerror = () => {
+        observer.error(reader.error || new Error('Datei konnte nicht gelesen werden.'));
+      };
 
-    return this.http.post<any>(this.baseUrl, formData).pipe(
-      map(
-        (res: any): Message => ({
-          id: String(res['message-id'] ?? res.id ?? Math.random()),
+      reader.readAsDataURL(file);
+    });
+
+    // 2) Base64 an postmessage schicken
+    return fileToBase64$.pipe(
+      switchMap((base64) => {
+        const body: any = {
+          chatid: chatId,
+          photo: base64, // API: token,<text><,photo><,position><,chatid>
+          // position lassen wir weg oder 0, je nach Bedarf
+          position: 0,
+        };
+
+        if (content && content.trim()) {
+          body.text = content.trim();
+        }
+
+        return this.postApi<any>('postmessage', body);
+      }),
+      map((res: any): Message => {
+        const messageId = String(res['message-id'] ?? res.id ?? Math.random());
+
+        // Wenn die API direkt eine photo-id zurückgibt, nutzen wir sie
+        const photoId = res.photoid ?? res.photoId ?? res.photo ?? null;
+
+        let imageUrl: string | null = null;
+
+        if (photoId) {
+          const token = this.getToken();
+          imageUrl =
+            `${this.baseUrl}` +
+            `?request=getphoto` +
+            `&token=${encodeURIComponent(token)}` +
+            `&photoid=${encodeURIComponent(photoId)}`;
+        }
+
+        return {
+          id: messageId,
           chatId: String(chatId),
           sender: sessionStorage.getItem('userid') ?? 'Ich',
-          content: res.text ?? content ?? '',
-          imageUrl: res.imageUrl ?? res.imageurl ?? res.image ?? null,
-          createdAt: res.time ?? new Date().toISOString(),
-        })
-      )
+          content: content ?? null,
+          imageUrl,
+          createdAt: new Date().toISOString(),
+        };
+      })
     );
   }
 

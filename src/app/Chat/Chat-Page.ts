@@ -5,6 +5,7 @@ import { Router, RouterLink } from '@angular/router';
 import { ActivatedRoute } from '@angular/router';
 import { ChatService, Message, Profile } from '../services/chat.service';
 import { FormsModule } from '@angular/forms';
+import { Observable } from 'rxjs';
 
 @Component({
   selector: 'app-chat',
@@ -80,46 +81,53 @@ export class Chat implements OnInit, AfterViewInit {
       },
     });
   }
+
   sendMessage() {
-    // Text aus dem Eingabefeld (newMessage benutzt du schon überall)
     const content = this.newMessage.trim();
 
     // nichts eingegeben & kein Foto -> nichts tun
     if (!content && !this.photoFile) return;
 
-    // BEDINGUNG: Foto darf nur mit Nachricht gesendet werden
-    if (this.photoFile && !content) {
-      alert('Ein Foto darf nur zusammen mit einer Nachricht gesendet werden.');
-      return;
-    }
-
-    const tempId = Math.random().toString();
+    const tempId = 'temp-' + Date.now();
 
     const tempMessage: Message = {
       id: tempId,
       chatId: this.chatId,
       sender: this.currentUser,
-      content,
-      imageUrl: this.previewUrl ?? null, // wenn Foto vorhanden, lokale Vorschau anzeigen
+      content: content || null, // darf leer sein
+      imageUrl: this.photoFile ? this.previewUrl ?? null : null,
       createdAt: new Date().toISOString(),
     };
 
+    // Sofort lokal anzeigen (Text, Foto oder beides)
     this.messages.push(tempMessage);
     this.newMessage = '';
     setTimeout(() => this.scrollToBottom());
 
-    // Entscheiden: Bild + Text oder nur Text
-    const request$ =
-      this.photoFile && content
-        ? this.chatService.sendImage(this.chatId, this.photoFile, content) // Bild + Text
-        : this.chatService.sendMessage(this.chatId, content); // nur Text
+    // Jetzt entscheiden, was an den Server geht:
+    // - mit Foto   -> sendImage
+    // - ohne Foto  -> sendMessage (nur Text)
+    let request$: Observable<Message>;
+
+    if (this.photoFile) {
+      // Foto mit oder ohne Text
+      request$ = this.chatService.sendImage(
+        this.chatId,
+        this.photoFile,
+        content || undefined // falls leer, wird im Service nicht angehängt
+      );
+    } else {
+      // nur Text
+      request$ = this.chatService.sendMessage(this.chatId, content);
+    }
 
     request$.subscribe({
       next: (msg) => {
+        // temporäre Message durch echte vom Server ersetzen
         const index = this.messages.findIndex((m) => m.id === tempId);
         if (index >= 0) this.messages[index] = msg;
 
-        // Aufräumen, wenn Foto dabei war
+        // Aufräumen, falls Foto dabei war
         if (this.photoFile) {
           this.photoFile = null;
           if (this.previewUrl) {
@@ -129,12 +137,28 @@ export class Chat implements OnInit, AfterViewInit {
           this.showPhotoContainer = false;
         }
 
-        this.loadMessages(); // wie in deiner alten Version
+        this.loadMessages(); // wenn du unbedingt reloaden willst
+        setTimeout(() => this.scrollToBottom());
       },
       error: (err) => {
         console.error('Error sending message', err);
       },
     });
+  }
+
+  onFileSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+
+    if (file.type !== 'image/png') {
+      alert('Nur PNG-Dateien sind erlaubt.');
+      return;
+    }
+
+    this.photoFile = file;
+    this.previewUrl = URL.createObjectURL(file);
+    this.showPhotoContainer = true;
   }
 
   private scrollToBottom() {
@@ -146,6 +170,8 @@ export class Chat implements OnInit, AfterViewInit {
 
   async openCamera() {
     this.showPhotoContainer = true;
+    this.previewUrl = null;
+    this.photoFile = null;
 
     await new Promise((resolve) => setTimeout(resolve, 0));
 
@@ -164,66 +190,76 @@ export class Chat implements OnInit, AfterViewInit {
       console.error(err);
     }
   }
-
   takePhoto() {
-    const video = this.videoRef?.nativeElement;
-    const canvas = this.canvasRef?.nativeElement;
-    if (!video || !canvas) return;
+    if (!this.streamActive || !this.videoRef || !this.canvasRef) {
+      return;
+    }
 
-    canvas.width = video.videoWidth || 640;
-    canvas.height = video.videoHeight || 480;
+    const video = this.videoRef.nativeElement;
+    const canvas = this.canvasRef.nativeElement;
+
+    // Canvas-Größe an Video anpassen
+    const width = video.videoWidth || 640;
+    const height = video.videoHeight || 480;
+
+    canvas.width = width;
+    canvas.height = height;
 
     const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    if (!ctx) {
+      console.error('Canvas Context fehlt.');
+      return;
+    }
 
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    // Frame vom Video auf das Canvas zeichnen
+    ctx.drawImage(video, 0, 0, width, height);
 
-    canvas.toBlob(
-      (blob) => {
-        if (!blob) return;
+    // Canvas -> Blob -> File
+    canvas.toBlob((blob) => {
+      if (!blob) {
+        console.error('Konnte kein Bild aus dem Canvas erzeugen.');
+        return;
+      }
 
-        // Vorschau-URL aktualisieren
-        if (this.previewUrl) {
-          URL.revokeObjectURL(this.previewUrl);
-        }
-        this.previewUrl = URL.createObjectURL(blob);
+      // altes Preview aufräumen
+      if (this.previewUrl) {
+        URL.revokeObjectURL(this.previewUrl);
+        this.previewUrl = null;
+      }
 
-        // Blob als File speichern -> wird später an sendImage übergeben
-        this.photoFile = new File([blob], 'photo.jpg', {
-          type: blob.type || 'image/jpeg',
-        });
-      },
-      'image/jpeg',
-      0.9
-    );
+      const file = new File([blob], `photo-${Date.now()}.png`, {
+        type: 'image/png',
+      });
+
+      this.photoFile = file;
+      this.previewUrl = URL.createObjectURL(file);
+      this.showPhotoContainer = true;
+
+      // Kamera kann danach aus
+      this.stopCamera();
+    }, 'image/png');
   }
 
   stopCamera() {
-    const video = this.videoRef?.nativeElement;
-    const stream = ((video && (video.srcObject as MediaStream)) || this.cameraStream) ?? null;
-
-    if (stream) {
-      stream.getTracks().forEach((track) => track.stop());
+    if (this.cameraStream) {
+      this.cameraStream.getTracks().forEach((t) => t.stop());
+      this.cameraStream = null;
     }
 
-    if (video) {
-      video.srcObject = null;
+    if (this.videoRef) {
+      this.videoRef.nativeElement.srcObject = null;
     }
 
-    this.cameraStream = null;
     this.streamActive = false;
-
-    this.showPhotoContainer = false;
   }
 
   removePhoto() {
-    this.photoFile = null;
-
     if (this.previewUrl) {
       URL.revokeObjectURL(this.previewUrl);
     }
-    this.previewUrl = null;
 
+    this.previewUrl = null;
+    this.photoFile = null;
     this.showPhotoContainer = false;
   }
 

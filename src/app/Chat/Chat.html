@@ -19,15 +19,19 @@
 
   <div class="message-input">
     <div *ngIf="showPhotoContainer" class="photo-container">
-      <!-- Video IMMER im DOM, nur verstecken -->
       <video #video autoplay playsinline class="camera-preview" [hidden]="!streamActive"></video>
-
       <canvas #canvas hidden></canvas>
 
       <img *ngIf="previewUrl" [src]="previewUrl" alt="Foto Vorschau" class="photo-preview" />
     </div>
 
     <div class="camera-buttons">
+      <!-- NEU: verstecktes File-Input -->
+      <input #fileInput type="file" accept="image/png" hidden (change)="onFileSelected($event)" />
+
+      <!-- Button, um File-Dialog zu öffnen -->
+      <button type="button" (click)="fileInput.click()">🔗</button>
+
       <button *ngIf="!streamActive && !previewUrl" type="button" (click)="openCamera()">📷</button>
       <button *ngIf="streamActive" type="button" (click)="takePhoto()">📸 Foto machen</button>
       <button *ngIf="streamActive" type="button" (click)="stopCamera()">✖ Kamera stoppen</button>
@@ -35,6 +39,7 @@
     </div>
 
     <button type="button" (click)="shareCurrentLocation()" [disabled]="locationLoading">📍</button>
+
     <input
       type="text"
       [(ngModel)]="newMessage"
