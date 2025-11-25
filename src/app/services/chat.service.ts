@@ -43,20 +43,18 @@ export class ChatService {
 
   constructor(private http: HttpClient, private auth: AuthService) {}
 
-  // Holt aktuelles Token, wenn null/undefined dann ''
   private getToken(): string {
     return this.auth.token ?? '';
   }
 
-  // Für alle GET-Requests mit request=... mit entsprechenden notwendigen Parametern (von API)
   private getApi<T>(
-    request: string, // getchats, getmessages, ...
+    request: string,
     extraParams: Record<string, string | number | undefined> = {}
   ): Observable<T> {
     let params = new HttpParams()
       .set('request', request)
       .set('token', this.getToken())
-      .set('_', Date.now().toString()); // no caching
+      .set('_', Date.now().toString());
 
     for (const [key, value] of Object.entries(extraParams)) {
       if (value !== undefined && value !== null) {
@@ -64,10 +62,9 @@ export class ChatService {
       }
     }
 
-    return this.http.get<T>(this.baseUrl, { params }); // Will über Typescript typ T (Chat[], Message[], ..)
+    return this.http.get<T>(this.baseUrl, { params });
   }
 
-  // Für POST-Requests mit request in body
   private postApi<T>(request: string, extraBody: Record<string, unknown> = {}): Observable<T> {
     const body = {
       request,
@@ -78,12 +75,10 @@ export class ChatService {
     return this.http.post<T>(this.baseUrl, body);
   }
 
-  // Immer Array aus verschiedenen Response-Keys zu holen, um nicht immer res.chats || res.result || res.messages || … zu schreiben
   private extractList<T>(res: any, keys: string[]): T[] {
-    if (Array.isArray(res)) return res as T[]; // Antwort ist selber schon Array
+    if (Array.isArray(res)) return res as T[];
 
     for (const key of keys) {
-      // keys z.B.: ['chats', 'result']
       if (Array.isArray(res?.[key])) {
         return res[key] as T[];
       }
@@ -104,7 +99,6 @@ export class ChatService {
           const role = String(item.role ?? '')
             .trim()
             .toLowerCase();
-          // nur Chats anzeigen, in denen man wirklich drin ist
           return role === 'member' || role === 'owner';
         });
 
@@ -125,13 +119,11 @@ export class ChatService {
         const rawList = this.extractList<any>(res, ['messages', 'result']);
 
         return rawList.map((item: any): Message => {
-          // hier holen wir uns die photo-id – Namen raten wir grob
           const photoId = item.photoid ?? item.photoId ?? item.photo ?? item.image ?? null;
 
           let imageUrl: string | null = null;
 
           if (photoId) {
-            // URL, die dein Browser direkt als <img> laden kann
             const token = this.getToken();
             imageUrl =
               `${this.baseUrl}` +
@@ -171,7 +163,6 @@ export class ChatService {
   }
 
   sendImage(chatId: string, file: File, content?: string): Observable<Message> {
-    // 1) File in Base64 umwandeln
     const fileToBase64$ = new Observable<string>((observer) => {
       const reader = new FileReader();
 
@@ -189,13 +180,11 @@ export class ChatService {
       reader.readAsDataURL(file);
     });
 
-    // 2) Base64 an postmessage schicken
     return fileToBase64$.pipe(
       switchMap((base64) => {
         const body: any = {
           chatid: chatId,
-          photo: base64, // API: token,<text><,photo><,position><,chatid>
-          // position lassen wir weg oder 0, je nach Bedarf
+          photo: base64,
           position: 0,
         };
 
@@ -208,7 +197,6 @@ export class ChatService {
       map((res: any): Message => {
         const messageId = String(res['message-id'] ?? res.id ?? Math.random());
 
-        // Wenn die API direkt eine photo-id zurückgibt, nutzen wir sie
         const photoId = res.photoid ?? res.photoId ?? res.photo ?? null;
 
         let imageUrl: string | null = null;
@@ -251,7 +239,6 @@ export class ChatService {
   createChat(chatname: string): Observable<Chat> {
     return this.getApi<any>('createchat', { chatname }).pipe(
       map((res) => {
-        // { chatid: 30, ... }
         if (res && (res.chatid != null || res.id != null)) {
           const candidate = res;
           return {
@@ -262,7 +249,6 @@ export class ChatService {
           } as Chat;
         }
 
-        // Fallback: Antwort mit chat-list
         const list = this.extractList<any>(res, ['chats', 'chatlist', 'result']);
         const item = list[list.length - 1] ?? {};
 
