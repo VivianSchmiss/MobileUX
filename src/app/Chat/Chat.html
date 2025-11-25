@@ -8,16 +8,32 @@
     <button class="leave-btn" (click)="leaveChat()">Chat verlassen</button>
   </header>
 
-  <div *ngFor="let msg of messages" class="message" [class.mine]="msg.sender === currentUser">
-    <div class="message-header">
-      <span class="sender">{{ msg.sender }}</span>
-      <span class="time">{{ msg.createdAt }}</span>
+  <!-- Nachrichten-Container für Scrollen -->
+  <div #messagesContainer class="messages-container">
+    <div *ngFor="let msg of messages" class="message" [class.mine]="msg.sender === currentUser">
+      <div class="message-header">
+        <span class="sender">{{ msg.sender }}</span>
+        <span class="time">{{ msg.createdAt }}</span>
+      </div>
+
+      <div class="content" *ngIf="msg.content">
+        <!-- Standort-Link -->
+        <ng-container *ngIf="isLocationLink(msg.content); else normalText">
+          <a [href]="msg.content" target="_blank" rel="noopener"> Mein aktueller Standort </a>
+        </ng-container>
+
+        <!-- normale Textnachricht -->
+        <ng-template #normalText>
+          {{ msg.content }}
+        </ng-template>
+      </div>
+
+      <img *ngIf="msg.imageUrl" [src]="msg.imageUrl" alt="Bild" class="image-message" />
     </div>
-    <div class="content">{{ msg.content }}</div>
-    <img *ngIf="msg.imageUrl" [src]="msg.imageUrl" alt="Bild" class="image-message" />
   </div>
 
   <div class="message-input">
+    <!-- Foto- / Kamera-Container -->
     <div *ngIf="showPhotoContainer" class="photo-container">
       <video #video autoplay playsinline class="camera-preview" [hidden]="!streamActive"></video>
       <canvas #canvas hidden></canvas>
@@ -26,10 +42,10 @@
     </div>
 
     <div class="camera-buttons">
-      <!-- NEU: verstecktes File-Input -->
+      <!-- Verstecktes File-Input nur für PNG -->
       <input #fileInput type="file" accept="image/png" hidden (change)="onFileSelected($event)" />
 
-      <!-- Button, um File-Dialog zu öffnen -->
+      <!-- Button öffnet den Datei-Dialog -->
       <button type="button" (click)="fileInput.click()">🔗</button>
 
       <button *ngIf="!streamActive && !previewUrl" type="button" (click)="openCamera()">📷</button>
@@ -38,8 +54,10 @@
       <button *ngIf="previewUrl" type="button" (click)="removePhoto()">🗑 Foto entfernen</button>
     </div>
 
+    <!-- Standort teilen -->
     <button type="button" (click)="shareCurrentLocation()" [disabled]="locationLoading">📍</button>
 
+    <!-- Texteingabe -->
     <input
       type="text"
       [(ngModel)]="newMessage"
@@ -47,7 +65,8 @@
       (keyup.enter)="sendMessage()"
     />
 
-    <button (click)="sendMessage()">➤</button>
+    <!-- Senden -->
+    <button type="button" (click)="sendMessage()">➤</button>
   </div>
 
   <ng-template #loadingTpl>

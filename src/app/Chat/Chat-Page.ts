@@ -18,6 +18,8 @@ export class Chat implements OnInit, AfterViewInit {
   @ViewChild('messagesContainer')
   messagesContainer!: ElementRef<HTMLDivElement>;
 
+  @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
+
   messages: Message[] = [];
   chatId!: string;
   chatName = '';
@@ -82,10 +84,40 @@ export class Chat implements OnInit, AfterViewInit {
     });
   }
 
+  onPickFile() {
+    this.showAttachmentMenu = false;
+    if (!this.fileInput) return;
+
+    // zurücksetzen, damit dieselbe Datei erneut gewählt werden kann
+    this.fileInput.nativeElement.value = '';
+    this.fileInput.nativeElement.click();
+  }
+
+  onFileSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) return;
+
+    const file = input.files[0];
+
+    // Nur PNG-Bilder erlauben
+    if (file.type !== 'image/png') {
+      alert('Nur PNG-Bilder sind erlaubt.');
+      return;
+    }
+
+    // altes Preview aufräumen
+    if (this.previewUrl) {
+      URL.revokeObjectURL(this.previewUrl);
+    }
+
+    this.photoFile = file;
+    this.previewUrl = URL.createObjectURL(file);
+    this.showPhotoContainer = true;
+  }
+
   sendMessage() {
     const content = this.newMessage.trim();
 
-    // nichts eingegeben & kein Foto -> nichts tun
     if (!content && !this.photoFile) return;
 
     const tempId = 'temp-' + Date.now();
@@ -94,40 +126,43 @@ export class Chat implements OnInit, AfterViewInit {
       id: tempId,
       chatId: this.chatId,
       sender: this.currentUser,
-      content: content || null, // darf leer sein
+      content: content || null,
       imageUrl: this.photoFile ? this.previewUrl ?? null : null,
       createdAt: new Date().toISOString(),
     };
 
-    // Sofort lokal anzeigen (Text, Foto oder beides)
     this.messages.push(tempMessage);
     this.newMessage = '';
     setTimeout(() => this.scrollToBottom());
 
-    // Jetzt entscheiden, was an den Server geht:
-    // - mit Foto   -> sendImage
-    // - ohne Foto  -> sendMessage (nur Text)
     let request$: Observable<Message>;
 
     if (this.photoFile) {
-      // Foto mit oder ohne Text
-      request$ = this.chatService.sendImage(
-        this.chatId,
-        this.photoFile,
-        content || undefined // falls leer, wird im Service nicht angehängt
-      );
+      request$ = this.chatService.sendImage(this.chatId, this.photoFile, content || undefined);
     } else {
-      // nur Text
       request$ = this.chatService.sendMessage(this.chatId, content);
     }
 
     request$.subscribe({
       next: (msg) => {
-        // temporäre Message durch echte vom Server ersetzen
         const index = this.messages.findIndex((m) => m.id === tempId);
-        if (index >= 0) this.messages[index] = msg;
 
-        // Aufräumen, falls Foto dabei war
+        if (index >= 0) {
+          // WICHTIG:
+          // NIEMALS die Blob-URL behalten.
+          // Wenn msg.imageUrl null ist → einfach null setzen.
+          this.messages[index] = {
+            ...this.messages[index],
+            id: msg.id,
+            createdAt: msg.createdAt,
+            sender: msg.sender,
+            content: msg.content,
+            imageUrl: msg.imageUrl || null,
+          };
+        }
+
+        this.loadMessages();
+
         if (this.photoFile) {
           this.photoFile = null;
           if (this.previewUrl) {
@@ -137,28 +172,12 @@ export class Chat implements OnInit, AfterViewInit {
           this.showPhotoContainer = false;
         }
 
-        this.loadMessages(); // wenn du unbedingt reloaden willst
         setTimeout(() => this.scrollToBottom());
       },
       error: (err) => {
         console.error('Error sending message', err);
       },
     });
-  }
-
-  onFileSelected(event: Event) {
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    if (!file) return;
-
-    if (file.type !== 'image/png') {
-      alert('Nur PNG-Dateien sind erlaubt.');
-      return;
-    }
-
-    this.photoFile = file;
-    this.previewUrl = URL.createObjectURL(file);
-    this.showPhotoContainer = true;
   }
 
   private scrollToBottom() {
@@ -190,6 +209,7 @@ export class Chat implements OnInit, AfterViewInit {
       console.error(err);
     }
   }
+
   takePhoto() {
     if (!this.streamActive || !this.videoRef || !this.canvasRef) {
       return;
@@ -277,7 +297,8 @@ export class Chat implements OnInit, AfterViewInit {
       (pos) => {
         const { latitude, longitude } = pos.coords;
 
-        const link = `Mein aktueller Standort: https://maps.google.com/?q=${latitude},${longitude}`;
+        // Nur die Maps-URL als Inhalt
+        const link = `https://maps.google.com/?q=${latitude},${longitude}`;
 
         this.chatService.sendMessage(this.chatId, link).subscribe({
           next: (msg) => {
@@ -316,6 +337,11 @@ export class Chat implements OnInit, AfterViewInit {
         maximumAge: 0,
       }
     );
+  }
+
+  isLocationLink(content: string | null | undefined): boolean {
+    if (!content) return false;
+    return content.startsWith('https://maps.google.com/?q=');
   }
 
   leaveChat() {
