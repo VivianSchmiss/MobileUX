@@ -124,6 +124,7 @@ export class ChatService {
           let imageUrl: string | null = null;
 
           if (photoId) {
+            // URL die Browser direkt als <img> laden kann
             const token = this.getToken();
             imageUrl =
               `${this.baseUrl}` +
@@ -163,6 +164,7 @@ export class ChatService {
   }
 
   sendImage(chatId: string, file: File, content?: string): Observable<Message> {
+    // File in Base64 umwandeln
     const fileToBase64$ = new Observable<string>((observer) => {
       const reader = new FileReader();
 
@@ -180,6 +182,7 @@ export class ChatService {
       reader.readAsDataURL(file);
     });
 
+    // Base64 an postmessage schicken
     return fileToBase64$.pipe(
       switchMap((base64) => {
         const body: any = {
@@ -197,6 +200,7 @@ export class ChatService {
       map((res: any): Message => {
         const messageId = String(res['message-id'] ?? res.id ?? Math.random());
 
+        // Wenn API photo-id zurückgibt wird direkt benutzt
         const photoId = res.photoid ?? res.photoId ?? res.photo ?? null;
 
         let imageUrl: string | null = null;
@@ -262,19 +266,6 @@ export class ChatService {
     );
   }
 
-  deleteChat(chatid: string): Observable<Chat> {
-    return this.getApi<any>('deletechat', { chatid }).pipe(
-      map((res) => {
-        const candidate = res.chat ?? res.result ?? res;
-
-        return {
-          id: String(candidate.id ?? chatid),
-          name: candidate.name ?? candidate.chatname ?? 'Gelöschter Chat',
-        } as Chat;
-      })
-    );
-  }
-
   invite(chatid: string, invitedhash: string): Observable<Invite[]> {
     return this.getApi<any>('invite', { chatid, invitedhash }).pipe(
       map((res) => {
@@ -316,6 +307,14 @@ export class ChatService {
 
   leaveChat(chatid: string): Observable<void> {
     return this.getApi<any>('leavechat', { chatid }).pipe(
+      map(() => {
+        return;
+      })
+    );
+  }
+
+  deleteChat(chatid: string): Observable<void> {
+    return this.getApi<any>('deletechat', { chatid }).pipe(
       map(() => {
         return;
       })

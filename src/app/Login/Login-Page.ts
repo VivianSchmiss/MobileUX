@@ -5,7 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../services/auth.service';
 
-// was der Server zurückschickt
+// was Server zurückschickt
 type LoginResponse = { status: 'ok' | 'error'; token?: string; message?: string };
 
 @Component({

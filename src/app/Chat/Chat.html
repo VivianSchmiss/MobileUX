@@ -5,11 +5,12 @@
     <h2 class="chat-title">
       {{ chatName || 'Chat' }}
     </h2>
-    <button class="leave-btn" (click)="leaveChat()">Chat verlassen</button>
+    <button class="leave-btn" *ngIf="!isOwner" (click)="leaveChat()">Chat verlassen</button>
+
+    <button class="leave-btn" *ngIf="isOwner" (click)="deleteChat()">Chat löschen</button>
   </header>
 
-  <!-- Nachrichten-Container für Scrollen -->
-  <div #messagesContainer class="messages-container">
+  <div class="messages-container" #messagesContainer>
     <div *ngFor="let msg of messages" class="message" [class.mine]="msg.sender === currentUser">
       <div class="message-header">
         <span class="sender">{{ msg.sender }}</span>
@@ -42,20 +43,19 @@
     </div>
 
     <div class="camera-buttons">
-      <!-- Verstecktes File-Input nur für PNG -->
       <input #fileInput type="file" accept="image/png" hidden (change)="onFileSelected($event)" />
 
-      <!-- Button öffnet den Datei-Dialog -->
       <button type="button" (click)="fileInput.click()">🔗</button>
 
       <button *ngIf="!streamActive && !previewUrl" type="button" (click)="openCamera()">📷</button>
       <button *ngIf="streamActive" type="button" (click)="takePhoto()">📸 Foto machen</button>
       <button *ngIf="streamActive" type="button" (click)="stopCamera()">✖ Kamera stoppen</button>
       <button *ngIf="previewUrl" type="button" (click)="removePhoto()">🗑 Foto entfernen</button>
-    </div>
 
-    <!-- Standort teilen -->
-    <button type="button" (click)="shareCurrentLocation()" [disabled]="locationLoading">📍</button>
+      <button type="button" (click)="shareCurrentLocation()" [disabled]="locationLoading">
+        📍
+      </button>
+    </div>
 
     <!-- Texteingabe -->
     <input
