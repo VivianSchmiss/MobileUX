@@ -23,7 +23,10 @@ export class Chat implements OnInit, AfterViewInit {
   chatName = '';
   loading = true;
   newMessage = '';
-  currentUser = sessionStorage.getItem('userid') || 'Ich';
+  //currentUser = sessionStorage.getItem('userid') || 'Ich';
+  currentUser = sessionStorage.getItem('userid') ?? '';
+
+  isOwner = false; //
   private viewInitialized = false;
 
   @ViewChild('video') videoRef!: ElementRef<HTMLVideoElement>;
@@ -52,7 +55,19 @@ export class Chat implements OnInit, AfterViewInit {
     this.chatService.getChats().subscribe({
       next: (chats) => {
         const found = chats.find((c) => c.id === this.chatId);
-        this.chatName = found?.name ?? '';
+
+        if (!found) {
+          this.router.navigate(['/chat-feed']);
+          return;
+        }
+
+        this.chatName = found.name;
+
+        this.isOwner = (found.role ?? '').trim().toLowerCase() === 'owner';
+      },
+      error: (err) => {
+        console.error('Fehler beim Laden der Chats', err);
+        this.router.navigate(['/chat-feed']);
       },
     });
   }
@@ -85,7 +100,7 @@ export class Chat implements OnInit, AfterViewInit {
   sendMessage() {
     const content = this.newMessage.trim();
 
-    // nichts eingegeben & kein Foto -> nichts tun
+    // kein text & kein Foto -> nichts tun
     if (!content && !this.photoFile) return;
 
     const tempId = 'temp-' + Date.now();
@@ -94,40 +109,36 @@ export class Chat implements OnInit, AfterViewInit {
       id: tempId,
       chatId: this.chatId,
       sender: this.currentUser,
-      content: content || null, // darf leer sein
+      content: content || null,
       imageUrl: this.photoFile ? this.previewUrl ?? null : null,
       createdAt: new Date().toISOString(),
     };
 
-    // Sofort lokal anzeigen (Text, Foto oder beides)
+    // Sofort lokal anzeigen (Text, Foto)
     this.messages.push(tempMessage);
     this.newMessage = '';
     setTimeout(() => this.scrollToBottom());
 
-    // Jetzt entscheiden, was an den Server geht:
-    // - mit Foto   -> sendImage
-    // - ohne Foto  -> sendMessage (nur Text)
+    // Entscheidung was an Server geht => sendImage: Text & Foto; sendMessage: Text
     let request$: Observable<Message>;
 
     if (this.photoFile) {
-      // Foto mit oder ohne Text
       request$ = this.chatService.sendImage(
         this.chatId,
         this.photoFile,
-        content || undefined // falls leer, wird im Service nicht angehängt
+        content || undefined // wenn leer: nicht in Service angehängt
       );
     } else {
-      // nur Text
       request$ = this.chatService.sendMessage(this.chatId, content);
     }
 
     request$.subscribe({
       next: (msg) => {
-        // temporäre Message durch echte vom Server ersetzen
+        // temp Message durch echte von Server ersetzen
         const index = this.messages.findIndex((m) => m.id === tempId);
         if (index >= 0) this.messages[index] = msg;
 
-        // Aufräumen, falls Foto dabei war
+        // Reset, falls Foto dabei gewesen
         if (this.photoFile) {
           this.photoFile = null;
           if (this.previewUrl) {
@@ -137,7 +148,7 @@ export class Chat implements OnInit, AfterViewInit {
           this.showPhotoContainer = false;
         }
 
-        this.loadMessages(); // wenn du unbedingt reloaden willst
+        this.loadMessages();
         setTimeout(() => this.scrollToBottom());
       },
       error: (err) => {
@@ -211,7 +222,7 @@ export class Chat implements OnInit, AfterViewInit {
       return;
     }
 
-    // Frame vom Video auf das Canvas zeichnen
+    // Frame vom Video auf Canvas drawen
     ctx.drawImage(video, 0, 0, width, height);
 
     // Canvas -> Blob -> File
@@ -221,7 +232,7 @@ export class Chat implements OnInit, AfterViewInit {
         return;
       }
 
-      // altes Preview aufräumen
+      // Preview reset
       if (this.previewUrl) {
         URL.revokeObjectURL(this.previewUrl);
         this.previewUrl = null;
@@ -235,7 +246,6 @@ export class Chat implements OnInit, AfterViewInit {
       this.previewUrl = URL.createObjectURL(file);
       this.showPhotoContainer = true;
 
-      // Kamera kann danach aus
       this.stopCamera();
     }, 'image/png');
   }
@@ -330,7 +340,43 @@ export class Chat implements OnInit, AfterViewInit {
         this.router.navigate(['/chat-feed']);
       },
       error: (err) => {
-        console.error('Error leaving chat', err);
+        console.error('Fehler beim Verlassen des Chats', err);
+
+        if (err.status === 400 || err.status === 403) {
+          const really = confirm(
+            'Du bist der Ersteller dieses Chats und kannst ihn nicht einfach verlassen. Willst du den Chat löschen?'
+          );
+          if (really) {
+            this.deleteChat(true);
+          }
+        } else {
+          alert('Chat konnte nicht verlassen werden.');
+        }
+
+        this.loading = false;
+      },
+    });
+  }
+
+  deleteChat(skipConfirm = false) {
+    if (!this.chatId) {
+      return;
+    }
+
+    if (!skipConfirm) {
+      const really = confirm('Chat wirklich löschen?');
+      if (!really) return;
+    }
+
+    this.loading = true;
+
+    this.chatService.deleteChat(this.chatId).subscribe({
+      next: () => {
+        this.router.navigate(['/chat-feed']);
+      },
+      error: (err) => {
+        console.error('Fehler beim Löschen des Chats', err);
+        alert('Chat konnte nicht gelöscht werden');
         this.loading = false;
       },
     });

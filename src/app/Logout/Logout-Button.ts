@@ -26,7 +26,6 @@ export class LogoutButton {
 
     const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
 
-    // Bneutzer wi
     this.http.post(this.logoutUrl, {}, { headers }).subscribe({
       next: (res: any) => {
         console.log('Logout:', res);

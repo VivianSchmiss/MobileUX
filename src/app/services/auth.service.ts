@@ -25,4 +25,8 @@ export class AuthService {
       Authorization: `Bearer ${this.token}`,
     });
   }
+
+  isLoggedIn(): boolean {
+    return this.token != null;
+  }
 }

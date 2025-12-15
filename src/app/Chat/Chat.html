@@ -5,16 +5,24 @@
     <h2 class="chat-title">
       {{ chatName || 'Chat' }}
     </h2>
-    <button class="leave-btn" (click)="leaveChat()">Chat verlassen</button>
+    <button class="leave-btn" *ngIf="!isOwner" (click)="leaveChat()">Chat verlassen</button>
+
+    <button class="leave-btn" *ngIf="isOwner" (click)="deleteChat()">Chat löschen</button>
   </header>
 
-  <div *ngFor="let msg of messages" class="message" [class.mine]="msg.sender === currentUser">
-    <div class="message-header">
-      <span class="sender">{{ msg.sender }}</span>
-      <span class="time">{{ msg.createdAt }}</span>
+  <div class="messages-container" #messagesContainer>
+    <div *ngFor="let msg of messages" class="message" [class.mine]="msg.sender === currentUser">
+      <div class="message-header">
+        <span class="sender">{{ msg.sender }}</span>
+        <span class="time">{{ msg.createdAt }}</span>
+      </div>
+
+      <div class="content">
+        {{ msg.content }}
+      </div>
+
+      <img *ngIf="msg.imageUrl" [src]="msg.imageUrl" alt="Bild" class="image-message" />
     </div>
-    <div class="content">{{ msg.content }}</div>
-    <img *ngIf="msg.imageUrl" [src]="msg.imageUrl" alt="Bild" class="image-message" />
   </div>
 
   <div class="message-input">
@@ -26,19 +34,19 @@
     </div>
 
     <div class="camera-buttons">
-      <!-- NEU: verstecktes File-Input -->
       <input #fileInput type="file" accept="image/png" hidden (change)="onFileSelected($event)" />
 
-      <!-- Button, um File-Dialog zu öffnen -->
       <button type="button" (click)="fileInput.click()">🔗</button>
 
       <button *ngIf="!streamActive && !previewUrl" type="button" (click)="openCamera()">📷</button>
       <button *ngIf="streamActive" type="button" (click)="takePhoto()">📸 Foto machen</button>
       <button *ngIf="streamActive" type="button" (click)="stopCamera()">✖ Kamera stoppen</button>
       <button *ngIf="previewUrl" type="button" (click)="removePhoto()">🗑 Foto entfernen</button>
-    </div>
 
-    <button type="button" (click)="shareCurrentLocation()" [disabled]="locationLoading">📍</button>
+      <button type="button" (click)="shareCurrentLocation()" [disabled]="locationLoading">
+        📍
+      </button>
+    </div>
 
     <input
       type="text"
