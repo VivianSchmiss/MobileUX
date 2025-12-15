@@ -17,8 +17,16 @@
         <span class="time">{{ msg.createdAt }}</span>
       </div>
 
-      <div class="content">
-        {{ msg.content }}
+      <div class="content" *ngIf="msg.content">
+        <!-- Standort-Link -->
+        <ng-container *ngIf="isLocationLink(msg.content); else normalText">
+          <a [href]="msg.content" target="_blank" rel="noopener"> Mein aktueller Standort </a>
+        </ng-container>
+
+        <!-- normale Textnachricht -->
+        <ng-template #normalText>
+          {{ msg.content }}
+        </ng-template>
       </div>
 
       <img *ngIf="msg.imageUrl" [src]="msg.imageUrl" alt="Bild" class="image-message" />
@@ -26,6 +34,7 @@
   </div>
 
   <div class="message-input">
+    <!-- Foto- / Kamera-Container -->
     <div *ngIf="showPhotoContainer" class="photo-container">
       <video #video autoplay playsinline class="camera-preview" [hidden]="!streamActive"></video>
       <canvas #canvas hidden></canvas>
@@ -48,6 +57,7 @@
       </button>
     </div>
 
+    <!-- Texteingabe -->
     <input
       type="text"
       [(ngModel)]="newMessage"
@@ -55,7 +65,8 @@
       (keyup.enter)="sendMessage()"
     />
 
-    <button (click)="sendMessage()">➤</button>
+    <!-- Senden -->
+    <button type="button" (click)="sendMessage()">➤</button>
   </div>
 
   <ng-template #loadingTpl>
