@@ -1,9 +1,5 @@
-<div class="invites-container">
-  <header class="invites-header">
-    <h2>Deine Einladungen</h2>
-  </header>
-
-  <main class="invites-list">
+<div class="app-content">
+  <div class="invites-body">
     <div *ngIf="loading">Einladungen werden geladen...</div>
 
     <p *ngIf="error" class="error-msg">{{ error }}</p>
@@ -11,11 +7,12 @@
     <div *ngIf="!loading && invites.length" class="invites-grid">
       <div *ngFor="let invite of invites" class="invite-card">
         <div class="invite-info">
-          <strong>Chat: {{ invite.name }}</strong>
+          <strong> {{ invite.name }}</strong>
           <small>Von: {{ invite.sender }}</small>
         </div>
 
         <div class="invite-actions">
+          <button class="btn-decline" (click)="declineInvite(invite.id)">Ablehnen</button>
           <button class="btn-join" (click)="joinInvite(invite.id)">Beitreten</button>
         </div>
       </div>
@@ -24,5 +21,5 @@
     <div *ngIf="!loading && !invites.length && !error" class="no-invites">
       Du hast aktuell keine Einladungen.
     </div>
-  </main>
+  </div>
 </div>

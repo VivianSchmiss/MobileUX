@@ -1,0 +1,14 @@
+<div class="app-content">
+  <div class="chat-body">
+    <div *ngIf="loading">Loading chats...</div>
+
+    <div *ngFor="let chat of chats" class="chat-item" (click)="openChat(chat)">
+      <div class="chat-name">{{ chat.name }}</div>
+    </div>
+
+    <!-- FAB NUR im ChatFeed -->
+    <button class="fab-new-chat" type="button" (click)="goToCreateChat()" aria-label="Neuen Chat">
+      +
+    </button>
+  </div>
+</div>

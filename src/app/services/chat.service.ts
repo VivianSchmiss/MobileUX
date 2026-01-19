@@ -41,7 +41,10 @@ export interface Invite {
 export class ChatService {
   private readonly baseUrl = 'https://www2.hs-esslingen.de/~nitzsche/api/';
 
-  constructor(private http: HttpClient, private auth: AuthService) {}
+  constructor(
+    private http: HttpClient,
+    private auth: AuthService,
+  ) {}
 
   private getToken(): string {
     return this.auth.token ?? '';
@@ -49,7 +52,7 @@ export class ChatService {
 
   private getApi<T>(
     request: string,
-    extraParams: Record<string, string | number | undefined> = {}
+    extraParams: Record<string, string | number | undefined> = {},
   ): Observable<T> {
     let params = new HttpParams()
       .set('request', request)
@@ -107,9 +110,9 @@ export class ChatService {
             id: String(item.chatid ?? item.id),
             name: item.chatname ?? item.name ?? 'Unbenannter Chat',
             role: String(item.role ?? '').trim(),
-          })
+          }),
         );
-      })
+      }),
     );
   }
 
@@ -142,10 +145,11 @@ export class ChatService {
             createdAt: item.time ?? '',
           };
         });
-      })
+      }),
     );
   }
 
+  /*
   sendMessage(chatId: string, content: string): Observable<Message> {
     return this.postApi<any>('postmessage', {
       text: content,
@@ -161,6 +165,13 @@ export class ChatService {
         })
       )
     );
+  }
+  */
+  sendMessage(chatId: string, content: string): Observable<any> {
+    return this.postApi<any>('postmessage', {
+      text: content,
+      chatid: chatId,
+    });
   }
 
   sendImage(chatId: string, file: File, content?: string): Observable<Message> {
@@ -197,6 +208,7 @@ export class ChatService {
 
         return this.postApi<any>('postmessage', body);
       }),
+      /*
       map((res: any): Message => {
         const messageId = String(res['message-id'] ?? res.id ?? Math.random());
 
@@ -222,7 +234,21 @@ export class ChatService {
           imageUrl,
           createdAt: new Date().toISOString(),
         };
-      })
+      }),
+      */
+      switchMap((base64) => {
+        const body: any = {
+          chatid: chatId,
+          photo: base64,
+          position: 0,
+        };
+
+        if (content && content.trim()) {
+          body.text = content.trim();
+        }
+
+        return this.postApi<any>('postmessage', body);
+      }),
     );
   }
 
@@ -234,9 +260,9 @@ export class ChatService {
           (item: any): Profile => ({
             hash: item.hash ?? item.userid ?? '',
             nickname: item.nickname ?? item.usernick ?? 'Unbenannter Nutzer',
-          })
+          }),
         );
-      })
+      }),
     );
   }
 
@@ -262,7 +288,7 @@ export class ChatService {
           lastMessage: item.lastmessage ?? null,
           updatedAt: item.updated_at ?? null,
         } as Chat;
-      })
+      }),
     );
   }
 
@@ -276,9 +302,9 @@ export class ChatService {
             id: String(item.chatid ?? chatid),
             name: item.chatname ?? item.name ?? undefined,
             sender: item.fromuser ?? item.userid ?? undefined,
-          })
+          }),
         );
-      })
+      }),
     );
   }
 
@@ -291,9 +317,9 @@ export class ChatService {
             id: String(item.chatid),
             name: item.chatname ?? undefined,
             sender: item.fromuser ?? item.userid ?? undefined,
-          })
+          }),
         );
-      })
+      }),
     );
   }
 
@@ -301,7 +327,7 @@ export class ChatService {
     return this.getApi<any>('joinchat', { chatid }).pipe(
       map(() => {
         return;
-      })
+      }),
     );
   }
 
@@ -309,7 +335,7 @@ export class ChatService {
     return this.getApi<any>('leavechat', { chatid }).pipe(
       map(() => {
         return;
-      })
+      }),
     );
   }
 
@@ -317,7 +343,7 @@ export class ChatService {
     return this.getApi<any>('deletechat', { chatid }).pipe(
       map(() => {
         return;
-      })
+      }),
     );
   }
 }

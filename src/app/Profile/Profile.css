@@ -1,0 +1,136 @@
+.profile-body {
+  width: 95%;
+  display: flex;
+  flex-direction: column;
+  margin: auto;
+  padding: 0.75rem 0;
+}
+
+/* Mobile-Ansicht */
+@media (max-width: 520px) {
+  .profile-detail {
+    max-width: 100%;
+    margin: 0;
+    border-radius: 0;
+  }
+}
+
+.auth-container {
+  max-width: 480px;
+  margin: 4rem auto;
+  padding: 2rem;
+  border-radius: 14px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  background: #fff;
+  font-family:
+    'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana,
+    sans-serif;
+}
+
+.menu-wrapper {
+  align-items: center;
+  gap: 0.5rem;
+  position: relative;
+  display: inline-block;
+}
+
+.menu-wrapper > button:first-child {
+  border: none;
+  outline: none;
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  background: #fefefe;
+  color: #6b233d;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.25);
+  transition:
+    background 0.15s ease,
+    transform 0.05s ease,
+    box-shadow 0.15s ease;
+}
+
+.menu-wrapper > button:first-child:hover {
+  background: #f3eaf0;
+  box-shadow: 0 3px 6px rgba(15, 23, 42, 0.3);
+}
+
+.menu-wrapper > button:first-child:active {
+  transform: translateY(1px) scale(0.98);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.25);
+}
+
+.menu-button {
+  background: transparent;
+  border: none;
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0.25rem 0.4rem;
+  border-radius: 999px;
+  color: #f9fafb;
+  transition:
+    background 0.15s ease,
+    transform 0.05s ease;
+}
+
+.menu-button:hover {
+  background: rgba(15, 23, 42, 0.25);
+}
+
+.menu-button:active {
+  transform: scale(0.96);
+}
+
+.menu-dropdown {
+  position: absolute;
+  right: 1rem;
+  top: 3.1rem;
+  background: #ffffff;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.25);
+  border-radius: 0.75rem;
+  min-width: 190px;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  padding: 0.35rem 0;
+}
+
+.menu-dropdown button {
+  border: none;
+  outline: none;
+  background: transparent;
+  width: 100%;
+  text-align: left;
+  padding: 0.45rem 0.9rem;
+  font-size: 0.9rem;
+  color: #111827;
+  cursor: pointer;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.menu-dropdown button:hover {
+  background: #f3f4f6;
+}
+
+.menu-dropdown ::ng-deep app-logout-button button,
+.menu-dropdown ::ng-deep app-deregister-button button {
+  border: none;
+  outline: none;
+  background: transparent;
+  width: 100%;
+  text-align: left;
+  padding: 0.45rem 0.9rem;
+  font-size: 0.9rem;
+  color: #111827;
+  cursor: pointer;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.menu-dropdown ::ng-deep app-logout-button button:hover,
+.menu-dropdown ::ng-deep app-deregister-button button:hover {
+  background: #f3f4f6;
+}

@@ -12,24 +12,7 @@ type LoginResponse = { status: 'ok' | 'error'; token?: string; message?: string 
   selector: 'app-login',
   standalone: true,
   imports: [CommonModule, FormsModule, RouterLink, RouterOutlet],
-  template: `
-    <div class="auth-container">
-      <h2>Login</h2>
-      <input [(ngModel)]="username" placeholder="Benutzername" />
-      <input [(ngModel)]="password" type="password" placeholder="Passwort" />
-
-      <div class="remember-me">
-        <input type="checkbox" [(ngModel)]="rememberMe" />
-        <span>Angemeldet bleiben</span>
-      </div>
-
-      <button (click)="login()">Anmelden</button>
-
-      <p><a routerLink="/register">Noch kein Account?</a></p>
-    </div>
-
-    <router-outlet></router-outlet>
-  `,
+  templateUrl: './Login.html',
   styleUrls: ['./Login.css'],
 })
 export class Login {
@@ -37,7 +20,11 @@ export class Login {
   password = '';
   rememberMe = true;
 
-  constructor(private http: HttpClient, private router: Router, private authService: AuthService) {}
+  constructor(
+    private http: HttpClient,
+    private router: Router,
+    private authService: AuthService,
+  ) {}
 
   private enc(v: string) {
     return encodeURIComponent((v ?? '').trim());
