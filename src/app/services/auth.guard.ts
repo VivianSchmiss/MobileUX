@@ -12,22 +12,23 @@ import {
 import { AuthService } from './auth.service';
 
 @Injectable({ providedIn: 'root' })
-export class AuthGuard implements CanActivate, CanMatch {
-  constructor(private auth: AuthService, private router: Router) {}
+export class AuthGuard implements CanActivate {
+  constructor(
+    private auth: AuthService,
+    private router: Router,
+  ) {}
 
+  // check ob token existiert
   private checkAuth(): boolean | UrlTree {
-    // aus auth.service
     if (this.auth.isLoggedIn()) {
       return true;
     }
+
+    console.error('Zugriff verweigert: Bitte einloggen.');
     return this.router.createUrlTree(['/login']);
   }
 
   canActivate(route: ActivatedRouteSnapshot, state: RouterStateSnapshot): boolean | UrlTree {
-    return this.checkAuth();
-  }
-
-  canMatch(route: Route, segments: UrlSegment[]): boolean | UrlTree {
     return this.checkAuth();
   }
 }

@@ -9,8 +9,8 @@ import { AuthService } from '../services/auth.service';
   selector: 'app-create-chat',
   standalone: true,
   imports: [CommonModule, FormsModule, RouterLink],
-  templateUrl: './Create-Chat.html',
-  styleUrls: ['./Create-Chat.css'],
+  templateUrl: './CreateChat.html',
+  styleUrls: ['./CreateChat.css'],
 })
 export class CreateChat implements OnInit {
   chatName = '';
@@ -21,7 +21,10 @@ export class CreateChat implements OnInit {
   error: string | null = null;
   success: string | null = null;
 
-  constructor(private chatService: ChatService, private router: Router) {}
+  constructor(
+    private chatService: ChatService,
+    private router: Router,
+  ) {}
 
   ngOnInit() {
     this.loadProfiles();

@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { catchError, map, of } from 'rxjs';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -28,5 +29,23 @@ export class AuthService {
 
   isLoggedIn(): boolean {
     return this.token != null;
+  }
+
+  validateToken(): Observable<boolean> {
+    const token = this.token;
+    if (!token) return of(false);
+
+    // API: validatetoken + token
+    const url = `${this.baseUrl}validatetoken?token=${encodeURIComponent(token)}`;
+
+    return this.http.get(url, { responseType: 'text' }).pipe(
+      map((res) => res.trim().toLowerCase() === 'ok'),
+      catchError(() => of(false)),
+    );
+  }
+
+  clearToken() {
+    sessionStorage.removeItem('authToken');
+    localStorage.removeItem('auth_token');
   }
 }

@@ -11,22 +11,7 @@ type RegisterResponse = { status: 'ok' | 'error'; token?: string; info?: string 
   selector: 'app-register',
   standalone: true,
   imports: [CommonModule, FormsModule, RouterLink],
-  template: `
-    <div class="auth-container">
-      <h2>Registrieren</h2>
-
-      <div *ngIf="errorMessage" class="error">{{ errorMessage }}</div>
-
-      <input [(ngModel)]="userId" placeholder="User ID" />
-      <input [(ngModel)]="password" type="password" placeholder="Passwort" />
-      <input [(ngModel)]="nickname" placeholder="Nickname" />
-      <input [(ngModel)]="fullname" placeholder="Vollständiger Name" />
-
-      <button (click)="register()">Registrieren</button>
-
-      <p><a routerLink="/login">Ich habe einen Account</a></p>
-    </div>
-  `,
+  templateUrl: './Register.html',
   styleUrls: ['./Register.css'],
 })
 export class Register {
@@ -36,7 +21,10 @@ export class Register {
   password = '';
   errorMessage = '';
 
-  constructor(private http: HttpClient, private router: Router) {}
+  constructor(
+    private http: HttpClient,
+    private router: Router,
+  ) {}
 
   // Wegen Query-Parameter &userid muss URL encodiert werden, damit es nicht kaputt geht wegen den Sonderzeichen
   private enc(v: string) {

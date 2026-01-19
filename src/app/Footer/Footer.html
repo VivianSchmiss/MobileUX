@@ -1,0 +1,30 @@
+<div class="app-footer">
+  <a
+    routerLink="/invites"
+    routerLinkActive="active"
+    [routerLinkActiveOptions]="{ exact: true }"
+    class="item"
+  >
+    <span class="label">📩</span>
+
+    <span class="badge" *ngIf="invitesCount && invitesCount > 0">{{ invitesCount }}</span>
+  </a>
+
+  <a
+    routerLink="/chat-feed"
+    routerLinkActive="active"
+    [routerLinkActiveOptions]="{ exact: true }"
+    class="item"
+  >
+    <span class="icon">🏠</span>
+  </a>
+
+  <a
+    routerLink="/profile"
+    routerLinkActive="active"
+    [routerLinkActiveOptions]="{ exact: true }"
+    class="item"
+  >
+    <span class="icon">👤</span>
+  </a>
+</div>

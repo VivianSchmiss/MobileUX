@@ -1,0 +1,16 @@
+<div class="register-detail">
+  <div class="auth-container">
+    <h2>Registrieren</h2>
+
+    <div *ngIf="errorMessage" class="error">{{ errorMessage }}</div>
+
+    <input [(ngModel)]="userId" placeholder="User ID" />
+    <input [(ngModel)]="password" type="password" placeholder="Passwort" />
+    <input [(ngModel)]="nickname" placeholder="Nickname" />
+    <input [(ngModel)]="fullname" placeholder="Vollständiger Name" />
+
+    <button (click)="register()">Registrieren</button>
+
+    <p><a routerLink="/login">Ich habe einen Account</a></p>
+  </div>
+</div>
