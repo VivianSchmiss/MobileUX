@@ -5,7 +5,10 @@
     [routerLinkActiveOptions]="{ exact: true }"
     class="item"
   >
-    <span class="label">📩</span>
+    <span class="label">
+      <img src="/icons/envelope.svg" class="icon-img icon-off" alt="Invites" />
+      <img src="/icons/envelope-active.svg" class="icon-img icon-on" alt="Invites" />
+    </span>
 
     <span class="badge" *ngIf="invitesCount && invitesCount > 0">{{ invitesCount }}</span>
   </a>
@@ -14,9 +17,11 @@
     routerLink="/chat-feed"
     routerLinkActive="active"
     [routerLinkActiveOptions]="{ exact: true }"
-    class="item"
+    class="item item--main"
   >
-    <span class="icon">🏠</span>
+    <span class="icon icon--main">
+      <img src="/icons/logo_v2.png" class="icon-img-png icon-img-png--main" alt="Home" />
+    </span>
   </a>
 
   <a
@@ -25,6 +30,9 @@
     [routerLinkActiveOptions]="{ exact: true }"
     class="item"
   >
-    <span class="icon">👤</span>
+    <span class="icon">
+      <img src="/icons/user.svg" class="icon-img icon-off" alt="Profile" />
+      <img src="/icons/user-active.svg" class="icon-img icon-on" alt="Profile" />
+    </span>
   </a>
 </div>

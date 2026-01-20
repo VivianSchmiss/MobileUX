@@ -18,7 +18,6 @@ import { ChatFeed } from '../Chat-Feed/ChatFeed';
 export class Invites implements OnInit {
   invites: Invite[] = [];
   loading = true;
-  //errorMessage = '';
   error: string | null = null;
   menuOpen = false;
 

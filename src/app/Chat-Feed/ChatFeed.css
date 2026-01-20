@@ -1,11 +1,12 @@
-.chat-body {
+.chatfeed-body {
   width: 95%;
   display: flex;
   flex-direction: column;
   margin: auto;
+  padding: 0.75rem 0;
 }
 
-.chat-body > div[ng-reflect-ng-if] {
+.chatfeed-body > div[ng-reflect-ng-if] {
   padding: 0.75rem 0;
   font-size: 0.9rem;
   color: #6b7280;
@@ -64,7 +65,7 @@
   border: none;
   cursor: pointer;
 
-  background: #6b233d;
+  background: #040458;
   color: #fff;
   font-size: 24px;
 

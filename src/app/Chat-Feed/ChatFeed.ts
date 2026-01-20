@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { ChatService, Chat, Message } from '../services/chat.service';
 import { CacheService } from '../services/cache.service';
 import { Router, RouterLink } from '@angular/router';
+import { HeaderService } from '../services/header.service';
 
 @Component({
   selector: 'app-chat-feed',
@@ -21,9 +22,12 @@ export class ChatFeed implements OnInit {
     private chatService: ChatService,
     private router: Router,
     private cache: CacheService,
+    private headerService: HeaderService,
   ) {}
 
   async ngOnInit() {
+    this.headerService.setShowMenu(false);
+
     // zuerst aus cache (auch offline)
     const cached = await this.cache.getChats();
     if (cached.length) {

@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpParams, HttpHeaders } from '@angular/common/http';
 import { Observable, forkJoin, map, of, switchMap, catchError } from 'rxjs';
 import { AuthService } from './auth.service';
 
@@ -13,6 +13,7 @@ export interface Message {
   id: string;
   chatId: string;
   sender: string;
+  senderNick?: string;
   content?: string | null;
   imageUrl?: string | null;
   createdAt: string;
@@ -39,7 +40,7 @@ export interface Invite {
   providedIn: 'root',
 })
 export class ChatService {
-  private readonly baseUrl = 'https://www2.hs-esslingen.de/~nitzsche/api/';
+  private readonly baseUrl = '/nitzsche-api';
 
   constructor(
     private http: HttpClient,
@@ -71,7 +72,7 @@ export class ChatService {
   private postApi<T>(request: string, extraBody: Record<string, unknown> = {}): Observable<T> {
     const body = {
       request,
-      token: this.getToken(),
+      token: this.getToken().trim(),
       ...extraBody,
     };
 
@@ -122,6 +123,8 @@ export class ChatService {
         const rawList = this.extractList<any>(res, ['messages', 'result']);
 
         return rawList.map((item: any): Message => {
+          console.log('MSG userid/usernick:', item.userid, item.usernick);
+
           const photoId = item.photoid ?? item.photoId ?? item.photo ?? item.image ?? null;
 
           let imageUrl: string | null = null;
@@ -139,7 +142,8 @@ export class ChatService {
           return {
             id: String(item.id),
             chatId: String(item.chatid ?? chatId),
-            sender: item.usernick || item.userid || 'unknown',
+            sender: item.userid || item.usernick || 'unknown',
+            senderNick: item.usernick || item.userid || 'unknown', // for looks
             content: item.text ?? '',
             imageUrl,
             createdAt: item.time ?? '',
@@ -149,33 +153,14 @@ export class ChatService {
     );
   }
 
-  /*
-  sendMessage(chatId: string, content: string): Observable<Message> {
-    return this.postApi<any>('postmessage', {
-      text: content,
-      chatid: chatId,
-    }).pipe(
-      map(
-        (res: any): Message => ({
-          id: String(res['message-id'] ?? res.id ?? Math.random()),
-          chatId: String(chatId),
-          sender: sessionStorage.getItem('userid') ?? 'Ich',
-          content,
-          createdAt: new Date().toISOString(),
-        })
-      )
-    );
-  }
-  */
   sendMessage(chatId: string, content: string): Observable<any> {
     return this.postApi<any>('postmessage', {
-      text: content,
       chatid: chatId,
+      text: content,
     });
   }
 
-  sendImage(chatId: string, file: File, content?: string): Observable<Message> {
-    // File in Base64 umwandeln
+  sendImage(chatId: string, file: File, content?: string): Observable<any> {
     const fileToBase64$ = new Observable<string>((observer) => {
       const reader = new FileReader();
 
@@ -186,69 +171,19 @@ export class ChatService {
         observer.complete();
       };
 
-      reader.onerror = () => {
+      reader.onerror = () =>
         observer.error(reader.error || new Error('Datei konnte nicht gelesen werden.'));
-      };
-
       reader.readAsDataURL(file);
     });
 
-    // Base64 an postmessage schicken
     return fileToBase64$.pipe(
-      switchMap((base64) => {
-        const body: any = {
+      switchMap((base64) =>
+        this.postApi<any>('postmessage', {
           chatid: chatId,
           photo: base64,
-          position: 0,
-        };
-
-        if (content && content.trim()) {
-          body.text = content.trim();
-        }
-
-        return this.postApi<any>('postmessage', body);
-      }),
-      /*
-      map((res: any): Message => {
-        const messageId = String(res['message-id'] ?? res.id ?? Math.random());
-
-        // Wenn API photo-id zurückgibt wird direkt benutzt
-        const photoId = res.photoid ?? res.photoId ?? res.photo ?? null;
-
-        let imageUrl: string | null = null;
-
-        if (photoId) {
-          const token = this.getToken();
-          imageUrl =
-            `${this.baseUrl}` +
-            `?request=getphoto` +
-            `&token=${encodeURIComponent(token)}` +
-            `&photoid=${encodeURIComponent(photoId)}`;
-        }
-
-        return {
-          id: messageId,
-          chatId: String(chatId),
-          sender: sessionStorage.getItem('userid') ?? 'Ich',
-          content: content ?? null,
-          imageUrl,
-          createdAt: new Date().toISOString(),
-        };
-      }),
-      */
-      switchMap((base64) => {
-        const body: any = {
-          chatid: chatId,
-          photo: base64,
-          position: 0,
-        };
-
-        if (content && content.trim()) {
-          body.text = content.trim();
-        }
-
-        return this.postApi<any>('postmessage', body);
-      }),
+          ...(content && content.trim() ? { text: content.trim() } : {}),
+        }),
+      ),
     );
   }
 

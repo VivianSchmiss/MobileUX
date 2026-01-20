@@ -1,136 +1,106 @@
 .profile-body {
   width: 95%;
+  min-height: 60vh;
   display: flex;
   flex-direction: column;
   margin: auto;
   padding: 0.75rem 0;
 }
 
+.profile-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 0.75rem;
+}
+
+.avatar {
+  width: 126px;
+  height: 126px;
+  border-radius: 999px;
+  background: #040458;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
+}
+
+.avatar-icon {
+  width: 56px;
+  height: 56px;
+  display: block;
+  object-fit: contain;
+}
+
 /* Mobile-Ansicht */
 @media (max-width: 520px) {
-  .profile-detail {
-    max-width: 100%;
-    margin: 0;
-    border-radius: 0;
+  .profile-body {
+    width: 92%;
+  }
+
+  .avatar {
+    width: 86px;
+    height: 86px;
+  }
+
+  .avatar-icon {
+    width: 40px;
+    height: 40px;
   }
 }
 
-.auth-container {
-  max-width: 480px;
-  margin: 4rem auto;
-  padding: 2rem;
-  border-radius: 14px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
-  background: #fff;
-  font-family:
-    'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana,
-    sans-serif;
+.profile-name {
+  margin-top: 1.5rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #111;
+  text-align: center;
 }
 
-.menu-wrapper {
-  align-items: center;
-  gap: 0.5rem;
-  position: relative;
-  display: inline-block;
+.profile-id {
+  margin-top: 0.5rem;
+  font-size: 0.95rem;
+  color: rgba(0, 0, 0, 0.6);
+  text-align: center;
 }
 
-.menu-wrapper > button:first-child {
-  border: none;
-  outline: none;
-  padding: 0.35rem 0.85rem;
-  border-radius: 999px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  background: #fefefe;
-  color: #6b233d;
-  cursor: pointer;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.25);
-  transition:
-    background 0.15s ease,
-    transform 0.05s ease,
-    box-shadow 0.15s ease;
-}
-
-.menu-wrapper > button:first-child:hover {
-  background: #f3eaf0;
-  box-shadow: 0 3px 6px rgba(15, 23, 42, 0.3);
-}
-
-.menu-wrapper > button:first-child:active {
-  transform: translateY(1px) scale(0.98);
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.25);
-}
-
-.menu-button {
-  background: transparent;
-  border: none;
-  font-size: 1.4rem;
-  line-height: 1;
-  cursor: pointer;
-  padding: 0.25rem 0.4rem;
-  border-radius: 999px;
-  color: #f9fafb;
-  transition:
-    background 0.15s ease,
-    transform 0.05s ease;
-}
-
-.menu-button:hover {
-  background: rgba(15, 23, 42, 0.25);
-}
-
-.menu-button:active {
-  transform: scale(0.96);
-}
-
-.menu-dropdown {
-  position: absolute;
-  right: 1rem;
-  top: 3.1rem;
-  background: #ffffff;
-  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.25);
-  border-radius: 0.75rem;
-  min-width: 190px;
-  z-index: 50;
+.profile-actions {
+  margin-top: auto;
   display: flex;
   flex-direction: column;
-  padding: 0.35rem 0;
-}
+  gap: 0.75rem;
 
-.menu-dropdown button {
-  border: none;
-  outline: none;
-  background: transparent;
   width: 100%;
-  text-align: left;
-  padding: 0.45rem 0.9rem;
-  font-size: 0.9rem;
-  color: #111827;
-  cursor: pointer;
-  border-radius: 0;
-  box-shadow: none;
+  max-width: 320px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
-.menu-dropdown button:hover {
-  background: #f3f4f6;
-}
-
-.menu-dropdown ::ng-deep app-logout-button button,
-.menu-dropdown ::ng-deep app-deregister-button button {
-  border: none;
-  outline: none;
-  background: transparent;
+:host ::ng-deep .logout-btn {
   width: 100%;
-  text-align: left;
-  padding: 0.45rem 0.9rem;
-  font-size: 0.9rem;
-  color: #111827;
+  height: 44px;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.18);
+  background: #ffffff;
+  color: #111;
+  font-weight: 600;
   cursor: pointer;
-  border-radius: 0;
-  box-shadow: none;
 }
 
-.menu-dropdown ::ng-deep app-logout-button button:hover,
-.menu-dropdown ::ng-deep app-deregister-button button:hover {
-  background: #f3f4f6;
+.logout-btn:hover {
+  filter: brightness(0.97);
+}
+
+:host ::ng-deep .danger-btn {
+  width: 100%;
+  height: 44px;
+  border-radius: 12px;
+  border: 1px solid #ad332d;
+  background: #e9382f;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.danger-btn:hover {
+  filter: brightness(0.95);
 }
