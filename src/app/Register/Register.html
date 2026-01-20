@@ -1,16 +1,20 @@
-<div class="register-detail">
-  <div class="auth-container">
-    <h2>Registrieren</h2>
+<div class="app-content">
+  <div class="register-body">
+    <div class="register-item">
+      <h2>Registrieren</h2>
 
-    <div *ngIf="errorMessage" class="error">{{ errorMessage }}</div>
+      <div *ngIf="errorMessage" class="error">{{ errorMessage }}</div>
+      <input [(ngModel)]="fullname" placeholder="Vollständiger Name" />
+      <input [(ngModel)]="nickname" placeholder="Nickname" />
+      <input [(ngModel)]="userId" placeholder="User ID" />
+      <input [(ngModel)]="password" type="password" placeholder="Passwort" />
 
-    <input [(ngModel)]="userId" placeholder="User ID" />
-    <input [(ngModel)]="password" type="password" placeholder="Passwort" />
-    <input [(ngModel)]="nickname" placeholder="Nickname" />
-    <input [(ngModel)]="fullname" placeholder="Vollständiger Name" />
+      <button (click)="register()">Registrieren</button>
 
-    <button (click)="register()">Registrieren</button>
-
-    <p><a routerLink="/login">Ich habe einen Account</a></p>
+      <div class="login-hint">
+        <span>Schon registriert?</span>
+        <a class="login-link" routerLink="/login">Zum Login</a>
+      </div>
+    </div>
   </div>
 </div>

@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Router, NavigationEnd, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs';
 import { Footer } from './Footer/Footer';
-import { Header } from './Header/Header'; // Pfad ggf. anpassen
+import { Header } from './Header/Header';
 
 @Component({
   selector: 'app-root',
@@ -13,16 +13,12 @@ import { Header } from './Header/Header'; // Pfad ggf. anpassen
   styleUrls: ['./app.css'],
 })
 export class AppComponent {
-  // Header nicht auf login/register
   showHeader = true;
 
-  // Footer nicht auf login/register und nicht auf chat/:id
   showFooter = true;
 
-  // Back-Button nur auf chat/:id
   headerShowBack = false;
 
-  // Bubble nur auf chat-feed (optional – falls du sie noch verwendest)
   showNewChatFab = false;
 
   constructor(private router: Router) {

@@ -8,13 +8,15 @@ import { CommonModule } from '@angular/common';
   standalone: true,
   imports: [CommonModule],
   template: ` <button class="logout-btn" (click)="logout()">Logout</button> `,
-  styleUrls: ['./Logout.css'],
 })
 export class LogoutButton {
   private logoutUrl =
     'https://www2.hs-esslingen.de/~nitzsche/map/chat/api/?request=logout&token=${token}';
 
-  constructor(private http: HttpClient, private router: Router) {}
+  constructor(
+    private http: HttpClient,
+    private router: Router,
+  ) {}
 
   logout() {
     // versucht AUth-Token zu holen (erst aus localStorage, wenn nicht vorhanden dann aus sessionStorage)

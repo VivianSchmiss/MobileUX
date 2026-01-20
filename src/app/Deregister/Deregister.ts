@@ -8,13 +8,15 @@ import { CommonModule } from '@angular/common';
   standalone: true,
   imports: [CommonModule],
   template: ` <button class="danger-btn" (click)="deleteAccount()">Account löschen</button> `,
-  styleUrls: ['./Deregister.css'],
 })
 export class DeregisterButton {
   private deleteUrl =
     'https://www2.hs-esslingen.de/~nitzsche/map/chat/api/?request=deregister&token=${token}';
 
-  constructor(private http: HttpClient, private router: Router) {}
+  constructor(
+    private http: HttpClient,
+    private router: Router,
+  ) {}
 
   deleteAccount() {
     const really = confirm('Willst du deinen Account wirklich löschen?');

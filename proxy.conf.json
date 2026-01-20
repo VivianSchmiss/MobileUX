@@ -1,0 +1,11 @@
+{
+  "/nitzsche-api": {
+    "target": "https://www2.hs-esslingen.de",
+    "secure": true,
+    "changeOrigin": true,
+    "logLevel": "debug",
+    "pathRewrite": {
+      "^/nitzsche-api": "/~nitzsche/api/"
+    }
+  }
+}

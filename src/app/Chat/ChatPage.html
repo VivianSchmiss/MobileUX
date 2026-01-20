@@ -1,98 +1,134 @@
-<div class="chat-detail">
-  <div *ngIf="!loading; else loadingTpl"></div>
+<div class="app-content">
+  <div class="chat-body" (click)="closeAllMenu(); closeHeaderMenu()">
+    <ng-container *ngIf="!loading; else loadingTpl">
+      <div class="messages-container" #messagesContainer (click)="$event.stopPropagation()">
+        <ng-container *ngFor="let msg of messages; let i = index">
+          <div
+            class="day-separator"
+            *ngIf="
+              i === 0 || formatDayLabel(messages[i - 1].createdAt) !== formatDayLabel(msg.createdAt)
+            "
+          >
+            <span>{{ formatDayLabel(msg.createdAt) }}</span>
+          </div>
 
-  <!-- Optional: Aktionen direkt unter dem globalen Header -->
-  <div class="chat-actions">
-    <button class="leave-btn" *ngIf="!isOwner" (click)="leaveChat()">Chat verlassen</button>
-    <button class="leave-btn" *ngIf="isOwner" (click)="deleteChat()">Chat löschen</button>
-  </div>
+          <!-- Message bubble -->
+          <div class="message" [class.mine]="isMine(msg)">
+            <div class="message-header">
+              <span class="sender" *ngIf="!isMine(msg)">{{ msg.senderNick || msg.sender }}</span>
+              <span class="time">{{ formatTime(msg.createdAt) }}</span>
+            </div>
 
-  <div class="messages-container" #messagesContainer>
-    <ng-container *ngFor="let msg of messages; let i = index">
-      <div
-        class="day-separator"
-        *ngIf="
-          i === 0 || formatDayLabel(messages[i - 1].createdAt) !== formatDayLabel(msg.createdAt)
-        "
-      >
-        <span>{{ formatDayLabel(msg.createdAt) }}</span>
-      </div>
+            <!-- Standort -->
+            <div class="content" *ngIf="msg.content">
+              <ng-container *ngIf="isLocationLink(msg.content); else normalText">
+                <a class="location-card" [href]="msg.content" target="_blank" rel="noopener">
+                  <div class="location-thumb-wrap">
+                    <img
+                      class="location-thumb"
+                      [src]="getStaticMapUrl(msg.content) || ''"
+                      alt="Standort Vorschau"
+                    />
+                    <div class="location-pin"></div>
+                  </div>
+                  <div class="location-meta">
+                    <div class="location-title">Aktueller Standort</div>
+                    <div class="location-sub">Zum Öffnen tippen</div>
+                  </div>
+                </a>
+              </ng-container>
 
-      <div class="message" [class.mine]="isMine(msg)">
-        <div class="message-header">
-          <span class="sender" *ngIf="!isMine(msg)">{{ msg.sender }}</span>
-          <span class="time">{{ formatTime(msg.createdAt) }}</span>
-        </div>
+              <ng-template #normalText>
+                {{ msg.content }}
+              </ng-template>
+            </div>
 
-        <div class="content" *ngIf="msg.content">
-          <ng-container *ngIf="isLocationLink(msg.content); else normalText">
-            <a class="location-card" [href]="msg.content" target="_blank" rel="noopener">
-              <div class="location-thumb-wrap">
-                <img
-                  class="location-thumb"
-                  [src]="getStaticMapUrl(msg.content) || ''"
-                  alt="Standort Vorschau"
-                />
-                <div class="location-pin"></div>
-              </div>
-              <div class="location-meta">
-                <div class="location-title">Aktueller Standort</div>
-                <div class="location-sub">Zum Öffnen tippen</div>
-              </div>
-            </a>
-          </ng-container>
-
-          <ng-template #normalText>
-            {{ msg.content }}
-          </ng-template>
-        </div>
-
-        <img
-          *ngIf="msg.imageUrl"
-          [src]="msg.imageUrl"
-          alt="Bild"
-          class="image-message"
-          (load)="onMessageImageLoaded()"
-          (error)="onMessageImageLoaded()"
-        />
+            <!-- Image -->
+            <img
+              *ngIf="msg.imageUrl"
+              [src]="msg.imageUrl"
+              alt="Bild"
+              class="image-message"
+              (load)="onMessageImageLoaded()"
+              (error)="onMessageImageLoaded()"
+            />
+          </div>
+        </ng-container>
+        <div #bottomAnchor></div>
       </div>
     </ng-container>
+
+    <!-- Kamera Popup -->
+    <div class="camera-overlay" *ngIf="cameraModalOpen" (click)="closeCameraModal()">
+      <div class="camera-sheet" (click)="$event.stopPropagation()">
+        <div class="camera-sheet-header">
+          <button type="button" class="sheet-close" (click)="closeCameraModal()">✕</button>
+          <div class="sheet-title">Kamera</div>
+          <div class="sheet-spacer"></div>
+        </div>
+
+        <div class="camera-sheet-content">
+          <video #video autoplay playsinline muted [hidden]="!!previewUrl"></video>
+
+          <img *ngIf="previewUrl" [src]="previewUrl" class="sheet-preview" alt="Foto Vorschau" />
+
+          <canvas #canvas hidden></canvas>
+        </div>
+
+        <div class="camera-sheet-actions">
+          <button type="button" *ngIf="streamActive && !previewUrl" (click)="takePhoto()">
+            Foto machen
+          </button>
+
+          <button type="button" *ngIf="previewUrl" (click)="removePhoto()">Entfernen</button>
+
+          <button type="button" class="primary" *ngIf="previewUrl" (click)="sendMessage()">
+            Senden
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
+</div>
+<!-- Footer -->
+<div class="chat-footer" (click)="$event.stopPropagation()">
+  <div class="footer-grid">
+    <!-- Links: Menü -->
+    <div class="footer-left">
+      <div class="actions-wrap">
+        <button type="button" class="actions-btn" (click)="toggleAllMenu()">+</button>
 
-  <div class="message-input">
-    <div *ngIf="showPhotoContainer" class="photo-container">
-      <video #video autoplay playsinline class="camera-preview" [hidden]="!streamActive"></video>
-      <canvas #canvas hidden></canvas>
+        <div class="actions-menu" *ngIf="showAllMenu">
+          <button type="button" (click)="onMenuFile()">Datei</button>
+          <button type="button" (click)="onMenuCamera()">Kamera</button>
+          <button type="button" (click)="onMenuLocation()" [disabled]="locationLoading">
+            Standort
+          </button>
+        </div>
 
-      <img *ngIf="previewUrl" [src]="previewUrl" alt="Foto Vorschau" class="photo-preview" />
+        <input #fileInput type="file" accept="image/png" hidden (change)="onFileSelected($event)" />
+      </div>
     </div>
 
-    <div class="camera-buttons">
-      <input #fileInput type="file" accept="image/png" hidden (change)="onFileSelected($event)" />
+    <!-- Mitte: Input -->
+    <div class="footer-middle">
+      <input
+        type="text"
+        [(ngModel)]="newMessage"
+        placeholder="Nachricht schreiben..."
+        (keyup.enter)="sendMessage()"
+      />
+    </div>
 
-      <button type="button" (click)="fileInput.click()">🔗</button>
-
-      <button *ngIf="!streamActive && !previewUrl" type="button" (click)="openCamera()">📷</button>
-      <button *ngIf="streamActive" type="button" (click)="takePhoto()">📸 Foto machen</button>
-      <button *ngIf="streamActive" type="button" (click)="stopCamera()">✖ Kamera stoppen</button>
-      <button *ngIf="previewUrl" type="button" (click)="removePhoto()">🗑 Foto entfernen</button>
-
-      <button type="button" (click)="shareCurrentLocation()" [disabled]="locationLoading">
-        📍
+    <!-- Rechts: Send -->
+    <div class="footer-right">
+      <button type="button" class="send-btn" (click)="sendMessage()">
+        <img src="/icons/paper-plane.svg" class="send-icon" alt="" aria-hidden="true" />
       </button>
     </div>
-
-    <input
-      type="text"
-      [(ngModel)]="newMessage"
-      placeholder="Nachricht schreiben..."
-      (keyup.enter)="sendMessage()"
-    />
-
-    <button type="button" (click)="sendMessage()">➤</button>
   </div>
-
-  <ng-template #loadingTpl>
-    <div>Loading messages...</div>
-  </ng-template>
 </div>
+
+<ng-template #loadingTpl>
+  <div>Loading messages...</div>
+</ng-template>

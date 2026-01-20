@@ -1,8 +1,20 @@
-<div class="app-header">
+<div class="app-header" (click)="closeMenu()">
   <button *ngIf="showBack" class="back-btn" type="button" (click)="goBack()" aria-label="Zurück">
-    ←
+    <img src="/icons/back.svg" class="back-icon" alt="" aria-hidden="true" />
   </button>
 
   <div class="title">{{ title }}</div>
-  <div class="right-spacer"></div>
+
+  <div class="right" *ngIf="showMenuButton" (click)="$event.stopPropagation()">
+    <button type="button" class="menu-btn" (click)="toggleMenu($event)" aria-label="Menü">⋮</button>
+
+    <div class="menu" *ngIf="menuOpen">
+      <button type="button" (click)="emitHeaderAction('leave'); closeMenu()">Chat verlassen</button>
+      <button type="button" class="danger" (click)="emitHeaderAction('delete'); closeMenu()">
+        Chat löschen
+      </button>
+    </div>
+  </div>
+
+  <div class="right-spacer" *ngIf="!showMenuButton"></div>
 </div>

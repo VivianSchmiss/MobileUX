@@ -1,18 +1,24 @@
-<div class="login-detail">
-  <div class="auth-container">
-    <h2>Login</h2>
-    <input [(ngModel)]="username" placeholder="Benutzername" />
-    <input [(ngModel)]="password" type="password" placeholder="Passwort" />
+<div class="app-content">
+  <h1></h1>
+  <div class="login-body">
+    <div class="login-item">
+      <div class="brand">
+        <img class="brand-logo" src="/icons/logo_v2.png" alt="ENchat Logo" />
+        <h1 class="brand-title">ENchat</h1>
+      </div>
 
-    <div class="remember-me">
-      <input type="checkbox" [(ngModel)]="rememberMe" />
-      <span>Angemeldet bleiben</span>
+      <h2>Login</h2>
+      <input [(ngModel)]="username" placeholder="Benutzername" />
+      <input [(ngModel)]="password" type="password" placeholder="Passwort" />
+
+      <button (click)="login()">Anmelden</button>
+
+      <div class="register-hint">
+        <span>Schon registriert?</span>
+        <a class="register-link" routerLink="/register">Zum Registrieren</a>
+      </div>
     </div>
 
-    <button (click)="login()">Anmelden</button>
-
-    <p><a routerLink="/register">Noch kein Account?</a></p>
+    <router-outlet></router-outlet>
   </div>
-
-  <router-outlet></router-outlet>
 </div>

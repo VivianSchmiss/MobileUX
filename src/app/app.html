@@ -1,6 +1,6 @@
 <div class="app-body">
   <app-header *ngIf="showHeader" [showBack]="headerShowBack"></app-header>
-  <div class="app-content">
+  <div class="app-content" [class.no-padding]="headerShowBack">
     <router-outlet></router-outlet>
   </div>
   <app-footer *ngIf="showFooter"></app-footer>

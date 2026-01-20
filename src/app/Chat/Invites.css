@@ -25,6 +25,7 @@
 .invite-info strong {
   display: block;
   margin-bottom: 0.25rem;
+  font-size: 0.95rem;
 }
 
 .invite-info small {
@@ -43,6 +44,7 @@ button {
   border-radius: 5px;
   border: none;
   cursor: pointer;
+  font-size: 0.95rem;
   transition:
     background-color 0.2s ease,
     transform 0.1s ease;

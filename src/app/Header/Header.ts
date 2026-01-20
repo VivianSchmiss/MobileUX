@@ -2,7 +2,7 @@ import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, NavigationEnd, Router } from '@angular/router';
 import { filter } from 'rxjs';
-import { HeaderService } from '../services/header.service'; // Pfad ggf. anpassen
+import { HeaderService } from '../services/header.service';
 
 @Component({
   selector: 'app-header',
@@ -15,6 +15,9 @@ export class Header {
   @Input() showBack = false;
 
   title = '';
+
+  showMenuButton = false;
+  menuOpen = false;
 
   private routeTitle = '';
   private overrideTitle: string | null = null;
@@ -36,8 +39,39 @@ export class Header {
     });
   }
 
+  ngOnInit() {
+    this.headerService.showMenu$.subscribe((show) => {
+      this.showMenuButton = show;
+      if (!show) this.menuOpen = false;
+    });
+  }
+
+  ngAfterViewInit() {
+    window.addEventListener('click', this.closeMenuBound, true);
+  }
+
+  ngOnDestroy() {
+    window.removeEventListener('click', this.closeMenuBound, true);
+  }
+
+  emitHeaderAction(action: 'leave' | 'delete') {
+    window.dispatchEvent(new CustomEvent('header-action', { detail: action }));
+  }
+
+  private removeWindowClick?: () => void;
+
+  private closeMenuBound = () => this.closeMenu();
+
+  toggleMenu(ev?: MouseEvent) {
+    ev?.stopPropagation();
+    this.menuOpen = !this.menuOpen;
+  }
+
+  closeMenu() {
+    this.menuOpen = false;
+  }
+
   private updateTitle() {
-    // Service-Titel hat Vorrang, sonst Route-Titel
     this.title =
       this.overrideTitle && this.overrideTitle.trim().length > 0
         ? this.overrideTitle

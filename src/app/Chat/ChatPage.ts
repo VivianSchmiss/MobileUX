@@ -1,14 +1,13 @@
-import { Component, OnInit, AfterViewInit, ViewChild, ElementRef } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { Component, OnInit, AfterViewInit, ViewChild, ElementRef, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterLink } from '@angular/router';
-import { ActivatedRoute } from '@angular/router';
-import { ChatService, Message, Profile } from '../services/chat.service';
+import { Router, RouterLink, ActivatedRoute } from '@angular/router';
+import { ChatService, Message } from '../services/chat.service';
 import { CacheService } from '../services/cache.service';
 import { FormsModule } from '@angular/forms';
 import { Observable, interval, Subject, switchMap, takeUntil, EMPTY } from 'rxjs';
 import { HeaderService } from '../services/header.service';
-import { OnDestroy } from '@angular/core';
+import { NgZone } from '@angular/core';
+import { take } from 'rxjs/operators';
 
 @Component({
   selector: 'app-chat',
@@ -19,7 +18,6 @@ import { OnDestroy } from '@angular/core';
 })
 export class Chat implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('messagesContainer') messagesContainer!: ElementRef<HTMLDivElement>;
-
   @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
 
   @ViewChild('video') videoRef!: ElementRef<HTMLVideoElement>;
@@ -30,19 +28,37 @@ export class Chat implements OnInit, AfterViewInit, OnDestroy {
   chatId!: string;
   chatName = '';
   newMessage = '';
-  currentUser = sessionStorage.getItem('userid') ?? '';
+  currentUser = (sessionStorage.getItem('userid') ??
+    sessionStorage.getItem('userId') ??
+    sessionStorage.getItem('username') ??
+    sessionStorage.getItem('usernick') ??
+    '') as string;
 
   private destroy$ = new Subject<void>();
   private lastFromId = 0;
 
   loading = true;
-
-  isOwner = false; //
+  isOwner = false;
   private viewInitialized = false;
+
   showPhotoContainer = false;
+
   streamActive = false;
   locationLoading = false;
-  showAttachmentMenu = false;
+
+  showAllMenu = false;
+
+  showHeaderMenu = false;
+
+  toggleHeaderMenu() {
+    this.showHeaderMenu = !this.showHeaderMenu;
+  }
+
+  closeHeaderMenu() {
+    this.showHeaderMenu = false;
+  }
+
+  cameraModalOpen = false;
 
   private cameraStream: MediaStream | null = null;
   photoFile: File | null = null;
@@ -54,14 +70,18 @@ export class Chat implements OnInit, AfterViewInit, OnDestroy {
     private router: Router,
     private cache: CacheService,
     private headerService: HeaderService,
-  ) {}
+    private zone: NgZone,
+  ) {
+    console.log('[ChatPage] constructor');
+  }
 
   async ngOnInit() {
+    this.headerService.setShowMenu(true);
+
     this.chatId = this.route.snapshot.paramMap.get('id') ?? '';
 
     this.applyChatName(this.route.snapshot.queryParamMap.get('name') ?? this.chatName ?? '');
 
-    // chat in cache suchen (off)
     try {
       const cachedChats = await this.cache.getChats();
       const cachedChat = cachedChats.find((c) => c.id === this.chatId);
@@ -77,12 +97,10 @@ export class Chat implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    // online
     this.chatService.getChats().subscribe({
       next: (chats) => {
         const found = (chats ?? []).find((c) => c.id === this.chatId);
 
-        // wenn nicht in server
         if (!found) {
           this.router.navigate(['/chat-feed']);
           return;
@@ -91,7 +109,6 @@ export class Chat implements OnInit, AfterViewInit, OnDestroy {
         this.applyChatName(found.name ?? this.chatName);
         this.isOwner = (found.role ?? '').trim().toLowerCase() === 'owner';
 
-        // cache update
         this.cache.setChats(chats ?? []);
       },
       error: () => {},
@@ -100,21 +117,30 @@ export class Chat implements OnInit, AfterViewInit, OnDestroy {
 
   ngAfterViewInit() {
     this.viewInitialized = true;
-    /*this.loadMessages();*/
+
+    if ('scrollRestoration' in history) {
+      history.scrollRestoration = 'manual';
+    }
+
     this.loadCachedThenRefresh();
     this.startPolling();
+    window.addEventListener('header-action', this.onHeaderAction as EventListener);
+    this.headerService.setShowMenu(true);
   }
 
-  toggleAttachmentMenu() {
-    this.showAttachmentMenu = !this.showAttachmentMenu;
-  }
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+    this.headerService.clearTitle();
+    window.removeEventListener('header-action', this.onHeaderAction as EventListener);
+    this.headerService.setShowMenu(false);
 
-  onMessageImageLoaded() {
-    this.scrollToBottom();
-  }
+    this.stopCamera();
 
-  private afterChatLoaded() {
-    this.headerService.setTitle(this.chatName || 'Chat');
+    if (this.previewUrl) {
+      URL.revokeObjectURL(this.previewUrl);
+      this.previewUrl = null;
+    }
   }
 
   private applyChatName(name: string) {
@@ -122,24 +148,66 @@ export class Chat implements OnInit, AfterViewInit, OnDestroy {
     this.headerService.setTitle(this.chatName || 'Chat');
   }
 
-  ngOnDestroy(): void {
-    this.destroy$.next();
-    this.destroy$.complete();
-    this.headerService.clearTitle();
+  private onHeaderAction = (ev: Event) => {
+    const e = ev as CustomEvent<'leave' | 'delete'>;
+    if (!e?.detail) return;
+
+    if (e.detail === 'leave') {
+      if (!this.isOwner) this.leaveChat();
+    }
+
+    if (e.detail === 'delete') {
+      if (this.isOwner) this.deleteChat();
+    }
+  };
+
+  toggleAllMenu() {
+    this.showAllMenu = !this.showAllMenu;
+  }
+
+  closeAllMenu() {
+    this.showAllMenu = false;
+  }
+
+  onMenuFile() {
+    this.closeAllMenu();
+    this.onPickFile();
+  }
+
+  onMenuCamera() {
+    this.closeAllMenu();
+    this.openCameraModal();
+  }
+
+  onMenuLocation() {
+    this.closeAllMenu();
+    this.shareCurrentLocation();
+  }
+
+  openCameraModal() {
+    this.cameraModalOpen = true;
+    this.openCamera();
+  }
+
+  closeCameraModal() {
+    this.cameraModalOpen = false;
+    this.stopCamera();
+  }
+
+  onMessageImageLoaded() {
+    this.scrollToBottomStable();
   }
 
   private async loadCachedThenRefresh() {
     this.loading = true;
 
-    // zuerst cache anzeigen
     const cached = await this.cache.getMessages(this.chatId);
     if (cached.length) {
       this.messages = cached;
       this.loading = false;
-      setTimeout(() => this.scrollToBottom());
+      setTimeout(() => this.scrollToBottomStable());
     }
 
-    // für polling
     this.lastFromId = await this.cache.getLastFromId(this.chatId);
 
     this.chatService.getMessages(this.chatId, 0).subscribe({
@@ -149,13 +217,11 @@ export class Chat implements OnInit, AfterViewInit, OnDestroy {
           .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
         this.loading = false;
 
-        // cache updaten + lastFromId speichern
         await this.cache.setMessages(this.chatId, this.messages);
 
-        // lastFromId neu holen
         this.lastFromId = await this.cache.getLastFromId(this.chatId);
 
-        setTimeout(() => this.scrollToBottom());
+        setTimeout(() => this.scrollToBottomStable());
       },
       error: () => {
         this.loading = false;
@@ -168,9 +234,7 @@ export class Chat implements OnInit, AfterViewInit, OnDestroy {
       .pipe(
         takeUntil(this.destroy$),
         switchMap(() => {
-          // offline => kein Request
           if (!navigator.onLine) return EMPTY;
-
           return this.chatService.getMessages(this.chatId, this.lastFromId);
         }),
       )
@@ -178,7 +242,6 @@ export class Chat implements OnInit, AfterViewInit, OnDestroy {
         next: async (newMsgs) => {
           if (!newMsgs?.length) return;
 
-          // ✅ Dedupe: nur wirklich neue IDs
           const existingIds = new Set(this.messages.map((m) => m.id));
           const onlyNew = newMsgs.filter((m) => !existingIds.has(m.id));
           if (!onlyNew.length) return;
@@ -191,7 +254,7 @@ export class Chat implements OnInit, AfterViewInit, OnDestroy {
           this.lastFromId = Number.isFinite(max) ? max : this.lastFromId;
 
           await this.cache.appendMessages(this.chatId, onlyNew);
-          this.scrollToBottom();
+          this.scrollToBottomStable();
         },
       });
   }
@@ -205,8 +268,7 @@ export class Chat implements OnInit, AfterViewInit, OnDestroy {
           .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 
         this.loading = false;
-
-        setTimeout(() => this.scrollToBottom());
+        setTimeout(() => this.scrollToBottomStable());
       },
       error: (err) => {
         console.error('Error loading messages', err);
@@ -216,10 +278,8 @@ export class Chat implements OnInit, AfterViewInit, OnDestroy {
   }
 
   onPickFile() {
-    this.showAttachmentMenu = false;
     if (!this.fileInput) return;
 
-    // zurücksetzen, damit dieselbe Datei erneut gewählt werden kann
     this.fileInput.nativeElement.value = '';
     this.fileInput.nativeElement.click();
   }
@@ -230,25 +290,25 @@ export class Chat implements OnInit, AfterViewInit, OnDestroy {
 
     const file = input.files[0];
 
-    // Nur PNG-Bilder erlauben
     if (file.type !== 'image/png') {
       alert('Nur PNG-Bilder sind erlaubt.');
       return;
     }
 
-    // altes Preview aufräumen
     if (this.previewUrl) {
       URL.revokeObjectURL(this.previewUrl);
     }
 
     this.photoFile = file;
     this.previewUrl = URL.createObjectURL(file);
+
     this.showPhotoContainer = true;
   }
 
   sendMessage() {
-    const content = this.newMessage.trim();
+    console.log('[ME] userid=', sessionStorage.getItem('userid'), 'currentUser=', this.currentUser);
 
+    const content = this.newMessage.trim();
     if (!content && !this.photoFile) return;
 
     const tempId = 'temp-' + Date.now();
@@ -262,13 +322,11 @@ export class Chat implements OnInit, AfterViewInit, OnDestroy {
       createdAt: new Date().toISOString(),
     };
 
-    // Sofort lokal anzeigen (Text, Foto)
     this.messages.push(tempMessage);
     this.newMessage = '';
-    setTimeout(() => this.scrollToBottom());
+    //setTimeout(() => this.scrollToBottomStable());
+    this.scrollToBottomStable();
 
-    // Entscheidung was an Server geht => sendImage: Text & Foto; sendMessage: Text
-    //let request$: Observable<Message>;
     let request$: Observable<any>;
 
     if (this.photoFile) {
@@ -284,29 +342,28 @@ export class Chat implements OnInit, AfterViewInit, OnDestroy {
     });
 
     request$.subscribe({
-      next: () => {
-        // ✅ Nach Erfolg: echte Messages vom Server holen (seit lastFromId)
-        this.chatService.getMessages(this.chatId, this.lastFromId).subscribe({
+      //next: () => {
+      next: (res) => {
+        if (res?.status && String(res.status).toLowerCase() !== 'ok') {
+          console.error('postmessage returned non-ok:', res);
+          alert('Senden fehlgeschlagen: ' + (res.message ?? 'Unbekannter Fehler'));
+          const idx = this.messages.findIndex((m) => m.id === tempId);
+          if (idx >= 0) this.messages.splice(idx, 1);
+
+          return;
+        }
+
+        const from = Math.max(0, this.lastFromId - 1);
+
+        this.chatService.getMessages(this.chatId, from).subscribe({
           next: async (fresh) => {
             if (!fresh || fresh.length === 0) return;
 
-            // temp entfernen, sobald echte eigene Message da ist (match by content)
-            for (const serverMsg of fresh) {
-              if (!this.isMine(serverMsg)) continue;
+            const tempIndex = this.messages.findIndex(
+              (m) => m.id.startsWith('temp-') && this.isMine(m) && (m.content ?? '') === content,
+            );
+            if (tempIndex >= 0) this.messages.splice(tempIndex, 1);
 
-              const tempIndex = this.messages.findIndex(
-                (m) =>
-                  m.id.startsWith('temp-') &&
-                  this.isMine(m) &&
-                  (m.content ?? '') === (serverMsg.content ?? ''),
-              );
-
-              if (tempIndex >= 0) {
-                this.messages.splice(tempIndex, 1);
-              }
-            }
-
-            // dedupe per ID
             const existingIds = new Set(this.messages.map((m) => m.id));
             const onlyNew = fresh.filter((m) => !existingIds.has(m.id));
             if (onlyNew.length === 0) return;
@@ -315,19 +372,17 @@ export class Chat implements OnInit, AfterViewInit, OnDestroy {
               (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
             );
 
-            // lastFromId nur aus echten numeric IDs
             const numericIds = this.messages
               .map((m) => Number(m.id))
               .filter((n) => Number.isFinite(n));
             this.lastFromId = numericIds.length ? Math.max(...numericIds) : this.lastFromId;
 
             await this.cache.setMessages(this.chatId, this.messages);
-            this.scrollToBottom();
+            this.scrollToBottomStable();
           },
           error: () => {},
         });
 
-        // Foto UI cleanup
         if (this.photoFile) {
           this.photoFile = null;
           if (this.previewUrl) {
@@ -335,6 +390,10 @@ export class Chat implements OnInit, AfterViewInit, OnDestroy {
             this.previewUrl = null;
           }
           this.showPhotoContainer = false;
+
+          if (this.cameraModalOpen) {
+            this.closeCameraModal();
+          }
         }
       },
       error: (err) => {
@@ -344,17 +403,28 @@ export class Chat implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  private scrollToBottom() {
+  /*private scrollToBottomStable() {
     if (!this.viewInitialized || !this.messagesContainer) return;
 
     requestAnimationFrame(() => {
       const el = this.messagesContainer.nativeElement;
       el.scrollTop = el.scrollHeight;
     });
+  }*/
+
+  private scrollToBottomStable() {
+    // wartet, bis Angular mit Rendern fertig ist (auch nach async DOM Updates)
+    this.zone.onStable.pipe(take(1)).subscribe(() => {
+      if (!this.bottomAnchor) return;
+
+      this.bottomAnchor.nativeElement.scrollIntoView({
+        behavior: 'auto',
+        block: 'end',
+      });
+    });
   }
 
   async openCamera() {
-    this.showPhotoContainer = true;
     this.previewUrl = null;
     this.photoFile = null;
 
@@ -370,6 +440,10 @@ export class Chat implements OnInit, AfterViewInit, OnDestroy {
       const video = this.videoRef.nativeElement;
       video.srcObject = stream;
       this.streamActive = true;
+
+      try {
+        await this.videoRef.nativeElement.play();
+      } catch {}
     } catch (err) {
       alert('Kamera konnte nicht geöffnet werden.');
       console.error(err);
@@ -377,14 +451,11 @@ export class Chat implements OnInit, AfterViewInit, OnDestroy {
   }
 
   takePhoto() {
-    if (!this.streamActive || !this.videoRef || !this.canvasRef) {
-      return;
-    }
+    if (!this.streamActive || !this.videoRef || !this.canvasRef) return;
 
     const video = this.videoRef.nativeElement;
     const canvas = this.canvasRef.nativeElement;
 
-    // Canvas-Größe an Video anpassen
     const width = video.videoWidth || 640;
     const height = video.videoHeight || 480;
 
@@ -397,31 +468,26 @@ export class Chat implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    // Frame vom Video auf Canvas drawen
     ctx.drawImage(video, 0, 0, width, height);
 
-    // Canvas -> Blob -> File
+    const dataUrl = canvas.toDataURL('image/png');
+
+    if (this.previewUrl?.startsWith('blob:')) {
+      URL.revokeObjectURL(this.previewUrl);
+    }
+
+    this.previewUrl = dataUrl;
+    this.showPhotoContainer = true;
+    this.stopCamera();
+
     canvas.toBlob((blob) => {
       if (!blob) {
         console.error('Konnte kein Bild aus dem Canvas erzeugen.');
         return;
       }
 
-      // Preview reset
-      if (this.previewUrl) {
-        URL.revokeObjectURL(this.previewUrl);
-        this.previewUrl = null;
-      }
-
-      const file = new File([blob], `photo-${Date.now()}.png`, {
-        type: 'image/png',
-      });
-
+      const file = new File([blob], `photo-${Date.now()}.png`, { type: 'image/png' });
       this.photoFile = file;
-      this.previewUrl = URL.createObjectURL(file);
-      this.showPhotoContainer = true;
-
-      this.stopCamera();
     }, 'image/png');
   }
 
@@ -449,7 +515,7 @@ export class Chat implements OnInit, AfterViewInit, OnDestroy {
   }
 
   shareCurrentLocation() {
-    this.showAttachmentMenu = false;
+    this.closeAllMenu?.();
 
     if (!navigator.geolocation) {
       alert('Geolocation wird von deinem Browser nicht unterstützt.');
@@ -461,15 +527,62 @@ export class Chat implements OnInit, AfterViewInit, OnDestroy {
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const { latitude, longitude } = pos.coords;
-
-        // Nur die Maps-URL als Inhalt
         const link = `https://maps.google.com/?q=${latitude},${longitude}`;
 
+        const tempId = 'temp-' + Date.now();
+        const tempMessage: Message = {
+          id: tempId,
+          chatId: this.chatId,
+          sender: this.currentUser,
+          content: link,
+          imageUrl: null,
+          createdAt: new Date().toISOString(),
+        };
+
+        this.messages.push(tempMessage);
+        setTimeout(() => this.scrollToBottomStable());
+
         this.chatService.sendMessage(this.chatId, link).subscribe({
-          next: (msg) => {
-            this.messages.push(msg);
-            this.locationLoading = false;
-            setTimeout(() => this.scrollToBottom());
+          next: () => {
+            this.chatService.getMessages(this.chatId, this.lastFromId).subscribe({
+              next: async (fresh) => {
+                if (!fresh || fresh.length === 0) {
+                  this.locationLoading = false;
+                  return;
+                }
+
+                const tempIndex = this.messages.findIndex(
+                  (m) => m.id.startsWith('temp-') && this.isMine(m) && (m.content ?? '') === link,
+                );
+                if (tempIndex >= 0) {
+                  this.messages.splice(tempIndex, 1);
+                }
+
+                const existingIds = new Set(this.messages.map((m) => m.id));
+                const onlyNew = fresh.filter((m) => !existingIds.has(m.id));
+                if (onlyNew.length === 0) {
+                  this.locationLoading = false;
+                  return;
+                }
+
+                this.messages = [...this.messages, ...onlyNew].sort(
+                  (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+                );
+
+                const numericIds = this.messages
+                  .map((m) => Number(m.id))
+                  .filter((n) => Number.isFinite(n));
+                this.lastFromId = numericIds.length ? Math.max(...numericIds) : this.lastFromId;
+
+                await this.cache.setMessages(this.chatId, this.messages);
+                this.scrollToBottomStable();
+
+                this.locationLoading = false;
+              },
+              error: () => {
+                this.locationLoading = false;
+              },
+            });
           },
           error: (err) => {
             console.error('Error sending location', err);
@@ -496,11 +609,7 @@ export class Chat implements OnInit, AfterViewInit, OnDestroy {
             alert('Standort konnte nicht abgerufen werden.');
         }
       },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 0,
-      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
     );
   }
 
@@ -540,21 +649,16 @@ export class Chat implements OnInit, AfterViewInit, OnDestroy {
     const width = 420;
     const height = 220;
 
-    // Wikimedia Maps Static (PNG)
     return `https://maps.wikimedia.org/img/osm-intl,${zoom},${lat},${lon},${width}x${height}.png?mark=${lat},${lon},red-pushpin`;
   }
 
   leaveChat() {
-    if (!this.chatId) {
-      return;
-    }
+    if (!this.chatId) return;
 
     this.loading = true;
 
     this.chatService.leaveChat(this.chatId).subscribe({
-      next: () => {
-        this.router.navigate(['/chat-feed']);
-      },
+      next: () => this.router.navigate(['/chat-feed']),
       error: (err) => {
         console.error('Fehler beim Verlassen des Chats', err);
 
@@ -575,9 +679,7 @@ export class Chat implements OnInit, AfterViewInit, OnDestroy {
   }
 
   deleteChat(skipConfirm = false) {
-    if (!this.chatId) {
-      return;
-    }
+    if (!this.chatId) return;
 
     if (!skipConfirm) {
       const really = confirm('Chat wirklich löschen?');
@@ -587,9 +689,7 @@ export class Chat implements OnInit, AfterViewInit, OnDestroy {
     this.loading = true;
 
     this.chatService.deleteChat(this.chatId).subscribe({
-      next: () => {
-        this.router.navigate(['/chat-feed']);
-      },
+      next: () => this.router.navigate(['/chat-feed']),
       error: (err) => {
         console.error('Fehler beim Löschen des Chats', err);
         alert('Chat konnte nicht gelöscht werden');
@@ -604,7 +704,6 @@ export class Chat implements OnInit, AfterViewInit, OnDestroy {
     const iso = new Date(createdAt);
     if (!isNaN(iso.getTime())) return iso;
 
-    // API Format: YYYY-MM-DD_HH-MM-SS
     const m = createdAt.match(/^(\d{4})-(\d{2})-(\d{2})[_ ](\d{2})-(\d{2})-(\d{2})$/);
     if (m) {
       const [, y, mo, d, h, mi, s] = m;
@@ -616,7 +715,7 @@ export class Chat implements OnInit, AfterViewInit, OnDestroy {
   formatTime(createdAt: string): string {
     const dt = this.toDate(createdAt);
     if (!dt) return '';
-    return dt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); // 10:31
+    return dt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   }
 
   private startOfDay(d: Date): Date {
@@ -637,16 +736,11 @@ export class Chat implements OnInit, AfterViewInit, OnDestroy {
     return dt.toLocaleDateString([], { day: '2-digit', month: '2-digit', year: 'numeric' });
   }
 
-  // eigene Message rechts
   isMine(msg: Message): boolean {
     const sender = (msg.sender ?? '').trim().toLowerCase();
-
     const meId = (sessionStorage.getItem('userid') ?? '').trim().toLowerCase();
-
-    // häufig sender = userid
     if (meId && sender === meId) return true;
 
-    // häufig sender = nickname (key je nach login unterschiedlich)
     const meNick = (
       sessionStorage.getItem('nickname') ??
       sessionStorage.getItem('usernick') ??

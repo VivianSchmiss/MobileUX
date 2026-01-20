@@ -13,11 +13,16 @@
   padding: 0.75rem 0;
 }
 
+h3 {
+  font-size: 1.25rem;
+}
+
 .chat-name-input {
   display: block;
   padding: 0.8rem;
   border-radius: 5px;
   border: 1px solid #ccc;
+  font-size: 0.95rem;
 }
 
 .chatUsers-container {
@@ -29,17 +34,25 @@
 
 .chatUsers-container h3 {
   margin: 1rem 0;
-
   text-align: center;
 }
 
-.user-item {
-  margin: 0.25rem 0;
+.user-item label {
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  align-items: center;
+  cursor: pointer;
 }
 
 .user-item input[type='checkbox'] {
   accent-color: white;
   transform: scale(2.5);
+  transform-origin: left center;
+  justify-self: start;
+}
+
+.user-item {
+  margin: 0.5rem 0;
 }
 
 button {
@@ -47,7 +60,7 @@ button {
   width: 35%;
   margin: auto;
   margin-top: 25px;
-  background-color: #773f57;
+  background-color: #040458;
   color: white;
   border: none;
   border-radius: 5px;
@@ -61,7 +74,7 @@ button {
 
 button:hover:enabled {
   transform: scale(1.05);
-  background-color: #773f57;
+  background-color: #040458;
 }
 
 button:disabled {

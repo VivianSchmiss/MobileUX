@@ -11,6 +11,7 @@
   box-shadow: 0 10px 30px rgba(15, 23, 42, 0.18);
   overflow: hidden;
   font-family: system-ui, sans-serif;
+  font-size: large;
 
   display: grid;
   grid-template-rows: auto 1fr auto;
@@ -30,4 +31,8 @@
   overflow-y: auto;
   overflow-x: hidden;
   padding: 12px;
+}
+
+.app-content.no-padding {
+  padding: 0;
 }
