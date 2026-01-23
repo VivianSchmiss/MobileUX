@@ -1,59 +1,103 @@
-# MyAngularApp
+# ENchat - Messenger Web App 
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 20.3.6.
+MobileUX ist eine moderne Messenger-Webanwendung, entwickelt mit Angular.  
+Die App ermöglicht private und Gruppen-Chats, Einladungen, Profilverwaltung sowie das Versenden von Nachrichten, Bildern und Standortdaten.  
+Zusätzlich ist die Anwendung als **Progressive Web App (PWA)** konfiguriert und kann installiert sowie offline genutzt werden.
 
-## Development server
+---
 
-To start a local development server, run:
+## Features
+
+- Login & Registrierung
+- Chatfeed mit Einzel- und Gruppenchats
+- Chats:
+  - Textnachrichten
+  - Bilder / Dateien
+  - Standort senden (Google Maps Link)
+- Chat verlassen / Chat löschen (nur Owner)
+- Einladungen annehmen / ablehnen
+- Profil:
+  - Logout
+  - Account löschen
+- Progressive Web App (PWA)
+  - Offline-Funktionalität
+  - Installierbar (Desktop & Mobile)
+
+---
+
+## Tech Stack
+
+- Angular (Standalone Components)
+- TypeScript
+- HTML / CSS
+- Angular Service Worker (`@angular/pwa`)
+
+---
+
+## Voraussetzungen
+
+Folgende Software muss installiert sein:
+
+- **Node.js** (empfohlen: LTS Version, z. B. 18.x oder 20.x)
+- **npm**
+- **Angular CLI** `20.3.6`
+
+Versionen prüfen:
+```bash
+node -v
+npm -v
+ng version
+```
+---
+
+## Projekt lokal ausführen
+### 1. Repository klonen
 
 ```bash
-ng serve
+git clone https://github.com/VivianSchmiss/MobileUX.git
+cd MobileUX
 ```
-
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
-
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+### 2. Abhängigkeiten installieren
 
 ```bash
-ng generate component component-name
+npm install
 ```
+---
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+## Backend / API 
+Dieses Frontend benötigt ein laufendes Backend.
+- API Prefix : ```/nitzsche-api```
+- Proxy-Konfiguration: ```proxy.conf.json```
+- API wird über einen Angular Proxy aungesprochen
+
+---
+
+## Development starten
+Startet die App ohne PWA-Service-Worker
+```bash
+ng serve --proxy-config proxy.conf.json
+```
+Danach im Broswer öffnen
+```
+http://localhost:4200
+````
+---
+
+## PWA / Production Build
+Dieses Projekt wurde mit folgendem Befehl als PWA eingerichtete:
+```bash
+ng add @angular/pwa
+npm run build
+```
+---
+
+## Wichtige NPm Scripts
 
 ```bash
-ng generate --help
+ng serve     # Development Server
+ng build     # Production Build
 ```
 
-## Building
-
-To build the project run:
-
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Karma](https://karma-runner.github.io) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+## Team
+- Vivian Schmiss
+- Imran Nur Reyhan Sevinc
