@@ -4,15 +4,15 @@ import type { Chat, Message } from './chat.service';
 
 interface AppDB extends DBSchema {
   chats: {
-    key: string; // immer "all"
+    key: string;
     value: Chat[];
   };
   messages: {
-    key: string; // chatId
+    key: string;
     value: Message[];
   };
   meta: {
-    key: string; // z.B. "lastFromId:<chatId>"
+    key: string;
     value: number;
   };
 }
@@ -46,11 +46,15 @@ export class CacheService {
     return (await db.get('messages', chatId)) ?? [];
   }
 
+  async getLastMessage(chatId: string): Promise<Message | null> {
+    const list = await this.getMessages(chatId);
+    return list.length ? list[list.length - 1] : null;
+  }
+
   async setMessages(chatId: string, messages: Message[]): Promise<void> {
     const db = await this.dbPromise;
     await db.put('messages', messages, chatId);
 
-    // lastFromId: polling kann ab da holen
     const maxId = this.getMaxNumericId(messages);
     await db.put('meta', maxId, `lastFromId:${chatId}`);
   }
@@ -74,7 +78,24 @@ export class CacheService {
     for (const m of newList) map.set(m.id, m);
 
     const merged = Array.from(map.values());
-    merged.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    merged.sort((a, b) => {
+      const ta = Date.parse(String(a.createdAt ?? ''));
+      const tb = Date.parse(String(b.createdAt ?? ''));
+
+      const aOk = Number.isFinite(ta);
+      const bOk = Number.isFinite(tb);
+
+      if (aOk && bOk) return ta - tb;
+      if (aOk && !bOk) return -1;
+      if (!aOk && bOk) return 1;
+
+      const ia = Number(a.id);
+      const ib = Number(b.id);
+      if (Number.isFinite(ia) && Number.isFinite(ib)) return ia - ib;
+
+      return 0;
+    });
+
     return merged;
   }
 

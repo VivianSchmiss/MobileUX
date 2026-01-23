@@ -1,0 +1,29 @@
+<div class="app-content chatfeed-content">
+  <div class="chatfeed-body">
+    <div *ngIf="loading" class="loading">Loading chats...</div>
+
+    <div class="chat-list">
+      <button *ngFor="let chat of chats" class="chat-row" type="button" (click)="openChat(chat)">
+        <div class="avatar" aria-hidden="true">
+          <img src="/icons/users.svg" class="avatar-icon" alt="" aria-hidden="true" />
+        </div>
+
+        <div class="chat-meta">
+          <div class="row-top">
+            <div class="chat-name">{{ chat.name }}</div>
+            <div class="chat-time" *ngIf="chat.lastTimeLabel">{{ chat.lastTimeLabel }}</div>
+          </div>
+
+          <div class="row-bottom" *ngIf="chat.lastText">
+            <span class="sender" *ngIf="chat.lastSender">{{ chat.lastSender }}:</span>
+            <span class="preview">{{ chat.lastText }}</span>
+          </div>
+        </div>
+      </button>
+    </div>
+
+    <button class="new-chat" type="button" (click)="goToCreateChat()" aria-label="Neuen Chat">
+      +
+    </button>
+  </div>
+</div>

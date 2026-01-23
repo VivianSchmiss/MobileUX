@@ -1,0 +1,36 @@
+<div class="app-header" (click)="closeMenu()">
+  <div class="header-wrap">
+    <button *ngIf="showBack" class="back-btn" type="button" (click)="goBack()" aria-label="Zurück">
+      <img src="/icons/back.svg" class="back-icon" alt="" aria-hidden="true" />
+    </button>
+
+    <div class="title">{{ title }}</div>
+
+    <div class="right" *ngIf="showMenuButton" (click)="$event.stopPropagation()">
+      <button type="button" class="menu-btn" (click)="toggleMenu($event)" aria-label="Menü">
+        ⋮
+      </button>
+
+      <div class="menu" *ngIf="menuOpen">
+        <ng-container *ngIf="isChatContext; else nonChatMenu">
+          <button type="button" (click)="emitHeaderAction('leave'); closeMenu()">
+            <img src="/icons/exit.svg" class="menu-icon" alt="" aria-hidden="true" />
+            Chat verlassen
+          </button>
+          <button
+            *ngIf="isChatOwner"
+            type="button"
+            class="danger"
+            (click)="emitHeaderAction('delete'); closeMenu()"
+          >
+            <img src="/icons/trash.svg" class="menu-icon" alt="" aria-hidden="true" />
+            Chat löschen
+          </button>
+        </ng-container>
+        <ng-template #nonChatMenu></ng-template>
+      </div>
+    </div>
+
+    <div class="right-spacer" *ngIf="!showMenuButton"></div>
+  </div>
+</div>

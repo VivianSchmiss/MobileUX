@@ -1,0 +1,95 @@
+<ng-container *ngIf="!chatMode; else chatFooter">
+  <div class="app-footer">
+    <a
+      routerLink="/invites"
+      routerLinkActive="active"
+      [routerLinkActiveOptions]="{ exact: true }"
+      class="item"
+    >
+      <span class="label">
+        <img src="/icons/envelope.svg" class="icon-img icon-off" alt="Invites" />
+        <img src="/icons/envelope-active.svg" class="icon-img icon-on" alt="Invites" />
+      </span>
+    </a>
+
+    <a
+      routerLink="/chat-feed"
+      routerLinkActive="active"
+      [routerLinkActiveOptions]="{ exact: true }"
+      class="item item--main"
+    >
+      <span class="icon">
+        <img src="/icons/home.svg" class="icon-img icon-off" alt="Home" />
+        <img src="/icons/home-active.svg" class="icon-img icon-on" alt="Home" />
+      </span>
+    </a>
+
+    <a
+      routerLink="/profile"
+      routerLinkActive="active"
+      [routerLinkActiveOptions]="{ exact: true }"
+      class="item"
+    >
+      <span class="icon">
+        <img src="/icons/user.svg" class="icon-img icon-off" alt="Profile" />
+        <img src="/icons/user-active.svg" class="icon-img icon-on" alt="Profile" />
+      </span>
+    </a>
+  </div>
+</ng-container>
+
+<ng-template #chatFooter>
+  <div class="chat-footer" (click)="$event.stopPropagation()">
+    <div class="footer-grid">
+      <div class="footer-input">
+        <div class="footer-left">
+          <button type="button" class="add-btn" (click)="toggleAllMenu()">
+            <img src="/icons/plus-small.svg" class="add-icon" alt="" aria-hidden="true" />
+          </button>
+
+          <div class="add-menu" *ngIf="showAllMenu">
+            <button type="button" (click)="onMenuFile()">
+              <img src="/icons/picture.svg" class="input-icon" alt="" aria-hidden="true" />
+              Bild
+            </button>
+
+            <button type="button" (click)="onMenuCamera()">
+              <img src="/icons/camera.svg" class="input-icon" alt="" aria-hidden="true" />
+              Kamera
+            </button>
+
+            <button type="button" (click)="onMenuLocation()" [disabled]="locationLoading">
+              <img src="/icons/marker.svg" class="input-icon" alt="" aria-hidden="true" />
+              Standort
+            </button>
+          </div>
+
+          <input
+            #fileInput
+            type="file"
+            accept="image/png"
+            hidden
+            (change)="onFileSelected($event)"
+          />
+        </div>
+
+        <div class="footer-middle">
+          <input
+            type="text"
+            [ngModel]="message"
+            (ngModelChange)="onMessageInput($event)"
+            placeholder="Nachricht schreiben..."
+            (keyup.enter)="onEnter()"
+            (focus)="closeAllMenu()"
+          />
+        </div>
+      </div>
+
+      <div class="footer-right">
+        <button type="button" class="send-btn" (click)="onSend()">
+          <img src="/icons/paper-plane.svg" class="send-icon" alt="" aria-hidden="true" />
+        </button>
+      </div>
+    </div>
+  </div>
+</ng-template>

@@ -1,12 +1,17 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpParams, HttpHeaders } from '@angular/common/http';
-import { Observable, forkJoin, map, of, switchMap, catchError } from 'rxjs';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { Observable, map, switchMap } from 'rxjs';
 import { AuthService } from './auth.service';
 
 export interface Chat {
   id: string;
   name: string;
   role?: string;
+  lastActivityAt?: string | null;
+  lastActivityTs?: number;
+  lastSender?: string | null;
+  lastText?: string | null;
+  lastTimeLabel?: string | null;
 }
 
 export interface Message {
@@ -17,12 +22,6 @@ export interface Message {
   content?: string | null;
   imageUrl?: string | null;
   createdAt: string;
-}
-
-export interface CreateChat {
-  id: string;
-  name: string;
-  participantIds: string[];
 }
 
 export interface Profile {
@@ -36,9 +35,7 @@ export interface Invite {
   sender: string;
 }
 
-@Injectable({
-  providedIn: 'root',
-})
+@Injectable({ providedIn: 'root' })
 export class ChatService {
   private readonly baseUrl = '/nitzsche-api';
 
@@ -47,48 +44,45 @@ export class ChatService {
     private auth: AuthService,
   ) {}
 
-  private getToken(): string {
-    return this.auth.token ?? '';
+  private requireToken(): string {
+    const token = (this.auth.token ?? '').trim();
+    return token;
   }
 
+  // für GET: request + token + params
   private getApi<T>(
     request: string,
     extraParams: Record<string, string | number | undefined> = {},
   ): Observable<T> {
+    const token = this.requireToken().trim();
+
     let params = new HttpParams()
       .set('request', request)
-      .set('token', this.getToken())
+      .set('token', token)
       .set('_', Date.now().toString());
 
     for (const [key, value] of Object.entries(extraParams)) {
-      if (value !== undefined && value !== null) {
-        params = params.set(key, String(value));
-      }
+      if (value !== undefined && value !== null) params = params.set(key, String(value));
     }
 
     return this.http.get<T>(this.baseUrl, { params });
   }
 
-  private postApi<T>(request: string, extraBody: Record<string, unknown> = {}): Observable<T> {
-    const body = {
+  // für POST: postmessage
+  private postApi<T>(request: string, body: Record<string, unknown>): Observable<T> {
+    const token = this.requireToken().trim();
+    return this.http.post<T>(this.baseUrl, {
       request,
-      token: this.getToken().trim(),
-      ...extraBody,
-    };
-
-    return this.http.post<T>(this.baseUrl, body);
+      token,
+      ...body,
+    });
   }
 
   private extractList<T>(res: any, keys: string[]): T[] {
     if (Array.isArray(res)) return res as T[];
-
-    for (const key of keys) {
-      if (Array.isArray(res?.[key])) {
-        return res[key] as T[];
-      }
+    for (const k of keys) {
+      if (Array.isArray(res?.[k])) return res[k] as T[];
     }
-
-    console.warn('Unexpected response shape:', res);
     return [];
   }
 
@@ -96,8 +90,6 @@ export class ChatService {
     return this.getApi<any>('getchats').pipe(
       map((res) => {
         const rawList = this.extractList<any>(res, ['chats', 'result']) ?? [];
-
-        console.log('getchats rawList:', rawList);
 
         const filtered = rawList.filter((item: any) => {
           const role = String(item.role ?? '')
@@ -120,57 +112,49 @@ export class ChatService {
   getMessages(chatId: string, fromId: number = 0): Observable<Message[]> {
     return this.getApi<any>('getmessages', { fromid: fromId, chatid: chatId }).pipe(
       map((res) => {
-        const rawList = this.extractList<any>(res, ['messages', 'result']);
+        const raw = this.extractList<any>(res, ['messages', 'result']);
 
-        return rawList.map((item: any): Message => {
-          console.log('MSG userid/usernick:', item.userid, item.usernick);
-
-          const photoId = item.photoid ?? item.photoId ?? item.photo ?? item.image ?? null;
-
+        return raw.map((item: any): Message => {
+          const photoId = item.photoid ?? item.photoId ?? item.photo ?? null;
           let imageUrl: string | null = null;
 
           if (photoId) {
-            // URL die Browser direkt als <img> laden kann
-            const token = this.getToken();
+            const token = this.requireToken();
             imageUrl =
               `${this.baseUrl}` +
               `?request=getphoto` +
               `&token=${encodeURIComponent(token)}` +
-              `&photoid=${encodeURIComponent(photoId)}`;
+              `&photoid=${encodeURIComponent(String(photoId))}`;
           }
 
           return {
             id: String(item.id),
             chatId: String(item.chatid ?? chatId),
             sender: item.userid || item.usernick || 'unknown',
-            senderNick: item.usernick || item.userid || 'unknown', // for looks
+            senderNick: item.usernick || item.userid || 'unknown',
             content: item.text ?? '',
             imageUrl,
-            createdAt: item.time ?? '',
+            createdAt: String(item.time ?? ''),
           };
         });
       }),
     );
   }
 
+  // POST
   sendMessage(chatId: string, content: string): Observable<any> {
-    return this.postApi<any>('postmessage', {
-      chatid: chatId,
-      text: content,
-    });
+    return this.postApi<any>('postmessage', { chatid: chatId, text: content });
   }
 
   sendImage(chatId: string, file: File, content?: string): Observable<any> {
     const fileToBase64$ = new Observable<string>((observer) => {
       const reader = new FileReader();
-
       reader.onload = () => {
         const result = reader.result as string;
         const base64 = result.split(',')[1] ?? '';
         observer.next(base64);
         observer.complete();
       };
-
       reader.onerror = () =>
         observer.error(reader.error || new Error('Datei konnte nicht gelesen werden.'));
       reader.readAsDataURL(file);
@@ -190,8 +174,8 @@ export class ChatService {
   getProfiles(): Observable<Profile[]> {
     return this.getApi<any>('getprofiles').pipe(
       map((res) => {
-        const rawList = this.extractList<any>(res, ['profiles', 'result']);
-        return rawList.map(
+        const raw = this.extractList<any>(res, ['profiles', 'result']);
+        return raw.map(
           (item: any): Profile => ({
             hash: item.hash ?? item.userid ?? '',
             nickname: item.nickname ?? item.usernick ?? 'Unbenannter Nutzer',
@@ -204,50 +188,34 @@ export class ChatService {
   createChat(chatname: string): Observable<Chat> {
     return this.getApi<any>('createchat', { chatname }).pipe(
       map((res) => {
+        // API: response "chat-list" → letzten Eintrag oder direct id nehmen
         if (res && (res.chatid != null || res.id != null)) {
-          const candidate = res;
-          return {
-            id: String(candidate.chatid ?? candidate.id),
-            name: chatname,
-            lastMessage: null,
-            updatedAt: null,
-          } as Chat;
+          return { id: String(res.chatid ?? res.id), name: chatname } as Chat;
         }
-
         const list = this.extractList<any>(res, ['chats', 'chatlist', 'result']);
         const item = list[list.length - 1] ?? {};
-
         return {
-          id: String(item.chatid ?? item.id),
+          id: String(item.chatid ?? item.id ?? ''),
           name: item.chatname ?? item.name ?? chatname,
-          lastMessage: item.lastmessage ?? null,
-          updatedAt: item.updated_at ?? null,
+          role: String(item.role ?? '').trim(),
         } as Chat;
       }),
     );
   }
 
-  invite(chatid: string, invitedhash: string): Observable<Invite[]> {
-    return this.getApi<any>('invite', { chatid, invitedhash }).pipe(
-      map((res) => {
-        const rawList = this.extractList<any>(res, ['invites', 'result', 'chats', 'chatlist']);
+  deleteChat(chatid: string): Observable<void> {
+    return this.getApi<any>('deletechat', { chatid }).pipe(map(() => void 0));
+  }
 
-        return rawList.map(
-          (item: any): Invite => ({
-            id: String(item.chatid ?? chatid),
-            name: item.chatname ?? item.name ?? undefined,
-            sender: item.fromuser ?? item.userid ?? undefined,
-          }),
-        );
-      }),
-    );
+  invite(chatid: string, invitedhash: string): Observable<any> {
+    return this.getApi<any>('invite', { chatid, invitedhash });
   }
 
   getInvites(): Observable<Invite[]> {
     return this.getApi<any>('getinvites').pipe(
       map((res) => {
-        const rawList = this.extractList<any>(res, ['invites', 'result']);
-        return rawList.map(
+        const raw = this.extractList<any>(res, ['invites', 'result']);
+        return raw.map(
           (item: any): Invite => ({
             id: String(item.chatid),
             name: item.chatname ?? undefined,
@@ -259,26 +227,10 @@ export class ChatService {
   }
 
   joinChat(chatid: string): Observable<void> {
-    return this.getApi<any>('joinchat', { chatid }).pipe(
-      map(() => {
-        return;
-      }),
-    );
+    return this.getApi<any>('joinchat', { chatid }).pipe(map(() => void 0));
   }
 
   leaveChat(chatid: string): Observable<void> {
-    return this.getApi<any>('leavechat', { chatid }).pipe(
-      map(() => {
-        return;
-      }),
-    );
-  }
-
-  deleteChat(chatid: string): Observable<void> {
-    return this.getApi<any>('deletechat', { chatid }).pipe(
-      map(() => {
-        return;
-      }),
-    );
+    return this.getApi<any>('leavechat', { chatid }).pipe(map(() => void 0));
   }
 }

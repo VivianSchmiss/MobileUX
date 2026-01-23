@@ -1,0 +1,40 @@
+<div class="app-content">
+  <div class="register-body">
+    <div class="register-item">
+      <h2 class="register-title">Registrieren</h2>
+
+      <form (ngSubmit)="register()">
+        <input
+          [(ngModel)]="fullname"
+          name="fullname"
+          placeholder="Vollständiger Name"
+          autocomplete="name"
+        />
+
+        <input
+          [(ngModel)]="nickname"
+          name="nickname"
+          placeholder="Nickname"
+          autocomplete="nickname"
+        />
+
+        <input [(ngModel)]="userId" name="userId" placeholder="User ID" autocomplete="username" />
+
+        <input
+          [(ngModel)]="password"
+          name="password"
+          type="password"
+          placeholder="Passwort"
+          autocomplete="new-password"
+        />
+
+        <button type="submit">Registrieren</button>
+      </form>
+
+      <div class="login-hint">
+        <span>Schon registriert?</span>
+        <a class="login-link" routerLink="/login">Zum Login</a>
+      </div>
+    </div>
+  </div>
+</div>

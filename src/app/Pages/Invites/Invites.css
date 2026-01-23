@@ -1,0 +1,102 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.invites-body {
+  width: 95%;
+  margin: 0 auto;
+  padding: 0;
+
+  display: flex;
+  flex-direction: column;
+
+  flex: 1;
+  min-height: 0;
+  position: relative;
+}
+
+.invites-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1rem;
+}
+
+/* einzelne einladung */
+.invite-card {
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  background: #ffffff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.invite-info strong {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: var(--ty-name-size);
+  font-weight: var(--ty-name-weight);
+  line-height: var(--ty-name-lh);
+}
+
+.invite-info small {
+  color: #666;
+}
+
+.invite-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 0.75rem;
+}
+
+/* annehmen / ablehnen */
+button {
+  padding: 0.5rem 0.8rem;
+  border-radius: 5px;
+  border: none;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    transform 0.1s ease;
+  font-size: var(--ty-btn-size);
+  font-weight: var(--ty-btn-weight);
+  line-height: var(--ty-btn-lh);
+}
+
+button:hover {
+  transform: translateY(-1px);
+}
+
+.btn-join {
+  background: #28a745;
+  color: white;
+}
+
+.btn-join:hover {
+  background: #218838;
+}
+
+.btn-decline {
+  background: #dc3545;
+  color: white;
+}
+
+.btn-decline:hover {
+  background: #c82333;
+}
+
+.no-invites {
+  text-align: center;
+  color: #666;
+  margin-top: 2rem;
+}
+
+.error-msg {
+  color: #dc3545;
+  margin-bottom: 1rem;
+}

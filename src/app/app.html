@@ -1,7 +1,16 @@
 <div class="app-body">
   <app-header *ngIf="showHeader" [showBack]="headerShowBack"></app-header>
-  <div class="app-content" [class.no-padding]="headerShowBack">
+  <div class="app-content" [class.no-padding]="headerShowBack" [class.no-scroll]="contentNoScroll">
     <router-outlet></router-outlet>
   </div>
-  <app-footer *ngIf="showFooter"></app-footer>
+  <app-footer
+    *ngIf="showFooter"
+    [chatMode]="isChatDetail"
+    [(message)]="chatMessage"
+    [locationLoading]="chatLocationLoading"
+    (send)="onChatSend()"
+    (camera)="onChatCamera()"
+    (location)="onChatLocation()"
+    (fileSelected)="onChatFile($event)"
+  ></app-footer>
 </div>

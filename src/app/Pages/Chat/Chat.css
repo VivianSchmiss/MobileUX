@@ -1,0 +1,356 @@
+.chat-body {
+  width: 95%;
+  margin: 0 auto;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.messages-container {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  padding: 12px;
+  padding-bottom: 12px;
+
+  display: flex;
+  flex-direction: column;
+  background-image: radial-gradient(circle, rgba(0, 0, 0, 0.03) 1px, transparent 0);
+}
+
+.day-separator {
+  align-self: center;
+  margin: 10px 0 6px;
+  font-size: var(--ty-caption-size);
+  font-weight: var(--ty-caption-weight);
+  line-height: var(--ty-caption-lh);
+}
+
+.day-separator span {
+  background: rgba(0, 0, 0, 0.35);
+  color: rgba(255, 255, 255, 0.9);
+  padding: 8px 12px;
+  border-radius: 999px;
+}
+
+/* Nachrichten */
+.message {
+  max-width: 75%;
+  padding: 6px 10px 4px;
+  margin: 4px 0;
+  border-radius: 12px;
+  background: #ffffff;
+  align-self: flex-start;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.12);
+  word-wrap: break-word;
+}
+
+.message.mine {
+  background: #d3cfe4;
+  align-self: flex-end;
+}
+
+.message-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.7rem;
+  margin-bottom: 2px;
+  color: rgba(0, 0, 0, 0.55);
+}
+
+.sender {
+  color: rgba(0, 0, 0, 0.7);
+  font-size: var(--ty-text-size);
+  font-weight: var(--ty-btn-weight);
+  line-height: var(--ty-text-lh);
+}
+
+.time {
+  margin-left: auto;
+  white-space: nowrap;
+  opacity: 0.85;
+  font-size: var(--ty-caption-size);
+  font-weight: var(--ty-caption-weight);
+  line-height: var(--ty-caption-lh);
+}
+
+.content {
+  color: #111;
+  white-space: pre-wrap;
+  font-size: var(--ty-text-size);
+  font-weight: var(--ty-text-weight);
+  line-height: var(--ty-text-lh);
+}
+
+/* Bild */
+.image-message {
+  max-width: 220px;
+  max-height: 220px;
+  border-radius: 8px;
+  display: block;
+  margin-top: 4px;
+}
+
+/* Standort */
+.location-card {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+}
+
+.location-thumb-wrap {
+  position: relative;
+  width: 100%;
+  height: 140px;
+  overflow: hidden;
+}
+
+.location-thumb {
+  width: 100%;
+  height: 140px;
+  object-fit: cover;
+  display: block;
+}
+
+.location-meta {
+  padding: 8px 10px;
+}
+
+.location-title {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.location-sub {
+  font-size: 0.75rem;
+  color: #666;
+  margin-top: 2px;
+}
+
+.location-pin {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 18px;
+  height: 18px;
+  background: #e53935;
+  border-radius: 50% 50% 50% 0;
+  transform: translate(-50%, -100%) rotate(-45deg);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+}
+
+.location-pin::after {
+  content: '';
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background: #fff;
+  border-radius: 50%;
+  top: 5px;
+  left: 5px;
+}
+
+/* Kamera */
+.camera-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 100;
+  background: rgba(0, 0, 0, 0.55);
+
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 8px;
+}
+
+.camera-sheet {
+  width: 100%;
+  max-width: 480px;
+  max-height: 85vh;
+
+  background: #000;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+
+  display: flex;
+  flex-direction: column;
+}
+
+.camera-sheet-header {
+  display: grid;
+  grid-template-columns: 44px 1fr 44px;
+  align-items: center;
+  padding: 10px;
+  background: #1a1a1a;
+  color: #fff;
+}
+
+.sheet-close {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  border: none;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  cursor: pointer;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sheet-title {
+  text-align: center;
+  font-weight: 600;
+}
+
+.sheet-spacer {
+  width: 36px;
+  height: 36px;
+}
+
+.camera-sheet-content {
+  height: 360px;
+  padding: 12px;
+}
+
+.camera-sheet-content video,
+.camera-sheet-content .sheet-preview {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 18px;
+  background: #000;
+}
+
+.camera-sheet-actions {
+  display: flex;
+  gap: 10px;
+  padding: 12px;
+  background: #1a1a1a;
+}
+
+.camera-sheet-actions button {
+  flex: 1;
+  border: none;
+  border-radius: 999px;
+  padding: 10px 12px;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+.camera-sheet-actions button.primary {
+  background: #040458;
+}
+
+.camera-sheet-actions button:active {
+  transform: scale(0.97);
+}
+
+@media (max-height: 700px) {
+  .camera-sheet-content {
+    height: 300px;
+  }
+}
+
+/* Burger-Menu */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  display: grid;
+  place-items: center;
+  z-index: 2000;
+  padding: 16px;
+}
+
+.modal-card {
+  width: min(420px, 100%);
+  background: #ffffff;
+  border-radius: 18px;
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.35);
+  padding: 18px 16px 14px;
+  animation: modalIn 0.12s ease-out;
+}
+
+@keyframes modalIn {
+  from {
+    transform: translateY(8px);
+    opacity: 0.8;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.modal-title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin-bottom: 8px;
+}
+
+.modal-text {
+  font-size: 0.95rem;
+  line-height: 1.35;
+  color: rgba(15, 23, 42, 0.78);
+  margin-bottom: 14px;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.modal-btn {
+  border: 0;
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    transform 0.1s ease,
+    box-shadow 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.modal-btn:active {
+  transform: scale(0.98);
+}
+
+.modal-btn.secondary {
+  background: rgba(4, 4, 88, 0.08);
+  color: #040458;
+}
+
+.modal-btn.secondary:hover {
+  background: rgba(4, 4, 88, 0.12);
+}
+
+.modal-btn.danger {
+  background: #b00020;
+  color: #fff;
+}
+
+.modal-btn.danger:hover {
+  background: #98001b;
+}
+
+.modal-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
