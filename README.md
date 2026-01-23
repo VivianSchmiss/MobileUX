@@ -91,7 +91,7 @@ npm run build
 ```
 ---
 
-## Wichtige NPm Scripts
+## Wichtige NPM Scripts
 
 ```bash
 ng serve     # Development Server
